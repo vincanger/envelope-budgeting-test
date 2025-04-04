@@ -1,8 +1,8 @@
-app shadcnAdminWasp {
+app envelopeBudgeter {
   wasp: {
     version: "^0.16.2"
   },
-  title: "shadcn-admin-wasp",
+  title: "envelope budgeter",
   head: [
     "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />",
     "<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\" />",
@@ -13,6 +13,16 @@ app shadcnAdminWasp {
     userEntity: User,
     methods: {
       usernameAndPassword: {},
+      // email: {
+      //   fromField: {
+      //     name: "Envelope Budgeter",
+      //     email: "noreply@envelopebudgeter.com"
+      //   },
+      //   emailVerification: {
+      //     clientRoute: EmailVerificationRoute,
+      //     getEmailContentFn: import { getVerificationEmail } from "@src/server/auth/emails.js"
+      //   },
+      // },
       // google: {},
       // github: {},
     },
