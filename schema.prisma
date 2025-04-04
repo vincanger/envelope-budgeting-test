@@ -9,9 +9,97 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// --- Models based on PRD ---
+
 model User {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  isActive  Boolean  @default(true)
+  id              Int      @id @default(autoincrement()) // Using Int ID as per PRD and Wasp convention
+  // email           String   @unique // Managed by Wasp Auth
+  // emailVerified   Boolean  @default(false) // Managed by Wasp Auth
+  // password        String   // Managed by Wasp auth
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  lastLoginAt     DateTime?
+
+  // Relations
+  budgetProfile   BudgetProfile? @relation("OwnedProfile")
+  memberProfiles  UserBudgetProfile[]
+  // notifications   Notification[] // Deferred to later phase
+  transactions    Transaction[]    @relation("CreatedTransactions")
 }
+
+model BudgetProfile {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  currency    String   @default("USD")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  owner       User     @relation("OwnedProfile", fields: [ownerId], references: [id])
+  ownerId     Int      @unique  // One-to-one relation with owner
+  members     UserBudgetProfile[]
+  envelopes   Envelope[]
+  transactions Transaction[]
+}
+
+model UserBudgetProfile {
+  id              Int           @id @default(autoincrement())
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          Int
+  budgetProfile   BudgetProfile @relation(fields: [budgetProfileId], references: [id], onDelete: Cascade)
+  budgetProfileId Int
+  role            String        @default("VIEWER") // EDITOR, VIEWER
+  permissions     String        // Store as comma-separated string, handle in application logic
+  joinedAt        DateTime      @default(now())
+  lastAccessedAt  DateTime      @default(now())
+
+  @@unique([userId, budgetProfileId])
+  @@index([userId])
+  @@index([budgetProfileId])
+}
+
+model Envelope {
+  id              Int           @id @default(autoincrement())
+  name            String
+  budgetProfile   BudgetProfile @relation(fields: [budgetProfileId], references: [id], onDelete: Cascade)
+  budgetProfileId Int
+  amount          Float         @default(0)
+  spent           Float         @default(0)
+  category        String
+  color           String?
+  icon            String?
+  isArchived      Boolean       @default(false)
+  transactions    Transaction[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([budgetProfileId])
+}
+
+model Transaction {
+  id              Int           @id @default(autoincrement())
+  description     String
+  amount          Float
+  date            DateTime
+  envelope        Envelope      @relation(fields: [envelopeId], references: [id], onDelete: Restrict)
+  envelopeId      Int
+  budgetProfile   BudgetProfile @relation(fields: [budgetProfileId], references: [id], onDelete: Cascade)
+  budgetProfileId Int
+  createdBy       User          @relation("CreatedTransactions", fields: [createdById], references: [id])
+  createdById     Int
+  type            String        // EXPENSE, INCOME, TRANSFER
+  recurring       Boolean       @default(false)
+  recurringRule   String?       // For recurring transactions
+  isArchived      Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([envelopeId])
+  @@index([budgetProfileId])
+  @@index([createdById])
+}
+
+// --- Models deferred to later phases ---
+// model Report { ... }
+// model Notification { ... }

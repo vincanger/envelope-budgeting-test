@@ -5,60 +5,59 @@ This plan outlines the implementation of the envelope budgeting app using a modi
 
 ## Phase 1: Foundation
 ### 1.1 Data Models
-- Implement core Prisma models:
-  - User (extend existing)
-  - BudgetProfile
-  - Envelope
-  - Transaction
-- Add necessary indexes and relations
-- Implement cascade delete behaviors
+- [x] Implement core Prisma models:
+  - [x] User (extend existing)
+  - [x] BudgetProfile
+  - [x] Envelope
+  - [x] Transaction
+- [x] Add necessary indexes and relations
+- [x] Implement cascade delete behaviors
 
 ### 1.2 Basic Auth Flow
-- Configure Wasp auth with `emailAndPassword` method (using `Dummy` provider for development)
-- Implement password reset flow (using default Wasp mechanism)
-- Add email verification handling (using default Wasp mechanism)
-- Implement basic user profile management
-- Add session handling
+- [x] Configure Wasp auth with `email` method (using `Dummy` provider for development)
+- [x] Implement password reset flow (using default Wasp mechanism)
+- [x] Add email verification handling (using default Wasp mechanism)
+- [x] Implement basic user profile management
 
 ### 1.3 Core Operations
-- Create basic CRUD operations for:
-  - Budget profile management (Note: creation must link `ownerId` to `context.user.id`)
-  - User profile updates
-- Implement basic error handling
-- Add input validation
+- [x] Create basic CRUD operations for:
+  - [x] Budget profile management (Note: creation must link `ownerId` to `context.user.id`)
+  - [x] User profile updates
+- [x] Implement basic error handling
+- [x] Add input validation
 
 ### 1.4 Basic UI Components
-- Create layout components
-- Implement navigation
-- Add basic forms for:
-  - Profile creation
-  - Profile settings
-- Set up error boundaries
+- [x] Create layout components
+- [x] Implement navigation
+- [x] Add basic forms for:
+  - [x] Profile creation
+  - [x] Profile settings
+- [x] Set up error boundaries
 
 ## Phase 2: Core Budgeting
 ### 2.1 Envelope Management
-- Implement envelope CRUD operations
-- Add envelope categorization
-- Create envelope templates
-- Implement envelope archiving
+- [x] Implement envelope CRUD operations
+- [x] Add envelope categorization (Basic)
+- [ ] Create envelope templates
+- [x] Implement envelope archiving (Basic)
 
 ### 2.2 Transaction Basics
-- Add basic transaction CRUD
-- Implement transaction categorization
-- Create transaction history view
-- Add basic transaction search
+- [x] Add basic transaction CRUD
+- [x] Implement transaction categorization (via Envelope)
+- [x] Create transaction history view (Basic)
+- [ ] Add basic transaction search
 
 ### 2.3 Budget Calculations
-- Implement envelope balance tracking
-- Add basic budget vs. actual calculations
-- Create simple spending analytics
-- Implement basic data validation
+- [x] Implement envelope balance tracking
+- [x] Add basic budget vs. actual calculations (Basic display)
+- [ ] Create simple spending analytics
+- [x] Implement basic data validation
 
 ### 2.4 Enhanced UI
-- Create envelope management interface
-- Add transaction entry forms
-- Implement basic dashboard
-- Add loading states and error handling
+- [x] Create envelope management interface (Basic)
+- [x] Add transaction entry forms
+- [x] Implement basic dashboard
+- [x] Add loading states and error handling (Basic)
 
 ## Phase 3: User Management
 ### 3.1 Enhanced Auth

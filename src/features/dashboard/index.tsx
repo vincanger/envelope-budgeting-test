@@ -1,33 +1,49 @@
-import { Routes, routes } from 'wasp/client/router'
-import { Button } from '../../components/ui/button'
+import React from 'react';
+import { getEnvelopes } from 'wasp/client/operations';
+import { useQuery } from 'wasp/client/operations';
+import { type Envelope } from 'wasp/entities';
+import { Link } from 'wasp/client/router';
+import { Routes, routes } from 'wasp/client/router';
+import { Button } from '../../components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '../../components/ui/card'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '../../components/ui/tabs'
-import { Header } from '../../components/layout/header'
-import { Main } from '../../components/layout/main'
-import { TopNav } from '../../components/layout/top-nav'
-import { ProfileDropdown } from '../../components/profile-dropdown'
-import { Search } from '../../components/search'
-import { ThemeSwitch } from '../../components/theme-switch'
-import { Overview } from './components/overview'
-import { RecentSales } from './components/recent-sales'
+  CardFooter,
+} from '../../components/ui/card';
+import { Header } from '../../components/layout/header';
+import { Main } from '../../components/layout/main';
+import { TopNav } from '../../components/layout/top-nav';
+import { ProfileDropdown } from '../../components/profile-dropdown';
+import { Search } from '../../components/search';
+import { ThemeSwitch } from '../../components/theme-switch';
+import { DollarSign, ListChecks, PiggyBank, Wallet } from 'lucide-react';
+
+const formatCurrency = (value: number) => {
+  return `$${value.toFixed(2)}`;
+};
 
 export default function Dashboard() {
+  const { data: envelopes, isLoading, error } = useQuery(getEnvelopes);
+
+  const summary = React.useMemo(() => {
+    if (!envelopes) return { totalBudgeted: 0, totalSpent: 0, totalRemaining: 0, count: 0 };
+    const totalBudgeted = envelopes.reduce((sum, env) => sum + env.amount, 0);
+    const totalSpent = envelopes.reduce((sum, env) => sum + env.spent, 0);
+    return {
+      totalBudgeted,
+      totalSpent,
+      totalRemaining: totalBudgeted - totalSpent,
+      count: envelopes.length,
+    };
+  }, [envelopes]);
+
   return (
     <>
-      {/* ===== Top Heading ===== */}
       <Header>
-        <TopNav links={topNav} />
+        <h2 className="text-lg font-semibold">Budget Dashboard</h2>
         <div className='ml-auto flex items-center space-x-4'>
           <Search />
           <ThemeSwitch />
@@ -35,195 +51,92 @@ export default function Dashboard() {
         </div>
       </Header>
 
-      {/* ===== Main ===== */}
       <Main>
-        <div className='mb-2 flex items-center justify-between space-y-2'>
-          <h1 className='text-2xl font-bold tracking-tight'>Dashboard</h1>
-          <div className='flex items-center space-x-2'>
-            <Button>Download</Button>
-          </div>
+        <div className='mb-4 flex items-center justify-between space-y-2'>
+          <h1 className='text-2xl font-bold tracking-tight'>Overview</h1>
         </div>
-        <Tabs
-          orientation='vertical'
-          defaultValue='overview'
-          className='space-y-4'
-        >
-          <div className='w-full overflow-x-auto pb-2'>
-            <TabsList>
-              <TabsTrigger value='overview'>Overview</TabsTrigger>
-              <TabsTrigger value='analytics' disabled>
-                Analytics
-              </TabsTrigger>
-              <TabsTrigger value='reports' disabled>
-                Reports
-              </TabsTrigger>
-              <TabsTrigger value='notifications' disabled>
-                Notifications
-              </TabsTrigger>
-            </TabsList>
-          </div>
-          <TabsContent value='overview' className='space-y-4'>
-            <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
+        
+        {isLoading && <p>Loading dashboard data...</p>}
+        {error && <p className="text-red-500">Error loading data: {error.message}</p>}
+
+        {!isLoading && !error && (
+          <>
+            <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6'>
               <Card>
                 <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
                   <CardTitle className='text-sm font-medium'>
-                    Total Revenue
+                    Total Budgeted
                   </CardTitle>
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    viewBox='0 0 24 24'
-                    fill='none'
-                    stroke='currentColor'
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth='2'
-                    className='h-4 w-4 text-muted-foreground'
-                  >
-                    <path d='M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6' />
-                  </svg>
+                  <PiggyBank className='h-4 w-4 text-muted-foreground' />
                 </CardHeader>
                 <CardContent>
-                  <div className='text-2xl font-bold'>$45,231.89</div>
-                  <p className='text-xs text-muted-foreground'>
-                    +20.1% from last month
-                  </p>
+                  <div className='text-2xl font-bold'>{formatCurrency(summary.totalBudgeted)}</div>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                  <CardTitle className='text-sm font-medium'>
-                    Subscriptions
-                  </CardTitle>
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    viewBox='0 0 24 24'
-                    fill='none'
-                    stroke='currentColor'
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth='2'
-                    className='h-4 w-4 text-muted-foreground'
-                  >
-                    <path d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' />
-                    <circle cx='9' cy='7' r='4' />
-                    <path d='M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' />
-                  </svg>
+                  <CardTitle className='text-sm font-medium'>Total Spent</CardTitle>
+                  <DollarSign className='h-4 w-4 text-muted-foreground' />
                 </CardHeader>
                 <CardContent>
-                  <div className='text-2xl font-bold'>+2350</div>
-                  <p className='text-xs text-muted-foreground'>
-                    +180.1% from last month
-                  </p>
+                  <div className='text-2xl font-bold'>{formatCurrency(summary.totalSpent)}</div>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                  <CardTitle className='text-sm font-medium'>Sales</CardTitle>
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    viewBox='0 0 24 24'
-                    fill='none'
-                    stroke='currentColor'
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth='2'
-                    className='h-4 w-4 text-muted-foreground'
-                  >
-                    <rect width='20' height='14' x='2' y='5' rx='2' />
-                    <path d='M2 10h20' />
-                  </svg>
+                  <CardTitle className='text-sm font-medium'>Total Remaining</CardTitle>
+                   <Wallet className='h-4 w-4 text-muted-foreground' />
                 </CardHeader>
                 <CardContent>
-                  <div className='text-2xl font-bold'>+12,234</div>
-                  <p className='text-xs text-muted-foreground'>
-                    +19% from last month
-                  </p>
+                  <div className='text-2xl font-bold'>{formatCurrency(summary.totalRemaining)}</div>
                 </CardContent>
               </Card>
-              <Card>
+               <Card>
                 <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                  <CardTitle className='text-sm font-medium'>
-                    Active Now
-                  </CardTitle>
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    viewBox='0 0 24 24'
-                    fill='none'
-                    stroke='currentColor'
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth='2'
-                    className='h-4 w-4 text-muted-foreground'
-                  >
-                    <path d='M22 12h-4l-3 9L9 3l-3 9H2' />
-                  </svg>
+                  <CardTitle className='text-sm font-medium'>Envelopes</CardTitle>
+                  <ListChecks className='h-4 w-4 text-muted-foreground' />
                 </CardHeader>
                 <CardContent>
-                  <div className='text-2xl font-bold'>+573</div>
-                  <p className='text-xs text-muted-foreground'>
-                    +201 since last hour
-                  </p>
+                  <div className='text-2xl font-bold'>{summary.count}</div>
+                  <p className='text-xs text-muted-foreground'><Link to={routes.EnvelopesRoute.to} className="underline">Manage Envelopes</Link></p>
                 </CardContent>
               </Card>
             </div>
+
             <div className='grid grid-cols-1 gap-4 lg:grid-cols-7'>
-              <Card className='col-span-1 lg:col-span-4'>
+              <Card className='col-span-1 lg:col-span-7'>
                 <CardHeader>
-                  <CardTitle>Overview</CardTitle>
-                </CardHeader>
-                <CardContent className='pl-2'>
-                  <Overview />
-                </CardContent>
-              </Card>
-              <Card className='col-span-1 lg:col-span-3'>
-                <CardHeader>
-                  <CardTitle>Recent Sales</CardTitle>
+                  <CardTitle>Envelope Status</CardTitle>
                   <CardDescription>
-                    You made 265 sales this month.
+                    Overview of your budget categories.
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <RecentSales />
+                <CardContent className="pl-2">
+                  {!envelopes || envelopes.length === 0 ? (
+                     <p>No envelopes created yet. <Link to={routes.EnvelopesRoute.to} className="underline">Create one now</Link>.</p>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {envelopes.map((envelope) => (
+                        <Card key={envelope.id}>
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-lg">{envelope.name}</CardTitle>
+                            <CardDescription>{envelope.category || 'Uncategorized'}</CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-xs text-muted-foreground">Budgeted: {formatCurrency(envelope.amount)}</p>
+                            <p className="text-xs text-muted-foreground">Spent: {formatCurrency(envelope.spent)}</p>
+                            <p className="text-sm font-semibold">Remaining: {formatCurrency(envelope.amount - envelope.spent)}</p>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
-        </Tabs>
+          </>
+        )}
       </Main>
     </>
-  )
+  );
 }
-
-type TopNavLink = {
-  title: string
-  href: Routes['to']
-  isActive: boolean
-  disabled: boolean
-}
-
-const topNav: TopNavLink[] = [
-  {
-    title: 'Overview',
-    href: routes.DashboardRoute.to,
-    isActive: true,
-    disabled: false,
-  },
-  {
-    title: 'Customers',
-    href: routes.DashboardRoute.to,
-    isActive: false,
-    disabled: true,
-  },
-  {
-    title: 'Products',
-    href: routes.DashboardRoute.to,
-    isActive: false,
-    disabled: true,
-  },
-  {
-    title: 'Settings',
-    href: routes.DashboardRoute.to,
-    isActive: false,
-    disabled: true,
-  },
-]

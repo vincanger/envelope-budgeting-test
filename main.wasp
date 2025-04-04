@@ -12,29 +12,30 @@ app envelopeBudgeter {
   auth: {
     userEntity: User,
     methods: {
-      usernameAndPassword: {},
-      // email: {
-      //   fromField: {
-      //     name: "Envelope Budgeter",
-      //     email: "noreply@envelopebudgeter.com"
-      //   },
-      //   emailVerification: {
-      //     clientRoute: EmailVerificationRoute,
-      //     getEmailContentFn: import { getVerificationEmail } from "@src/server/auth/emails.js"
-      //   },
-      // },
-      // google: {},
-      // github: {},
+      email: {
+        fromField: {
+          name: "Envelope Budgeter",
+          email: "noreply@example.com"
+        },
+        emailVerification: {
+          clientRoute: VerifyEmailRoute
+        },
+        passwordReset: {
+          clientRoute: PasswordResetRoute
+        }
+      }
     },
     onAuthFailedRedirectTo: "/sign-in",
     onAuthSucceededRedirectTo: "/",
+  },
+  emailSender: {
+    provider: Dummy
   },
   client: {
     rootComponent: import Main from "@src/main",
     setupFn: import QuerySetup from "@src/config/querySetup",
   }
 }
-
 
 route SignupRoute { path: "/sign-up", to: Signup }
 page Signup {
@@ -44,6 +45,21 @@ page Signup {
 route LoginRoute { path: "/sign-in", to: Login }
 page Login {
   component: import { Login } from "@src/features/auth/login"
+}
+
+route RequestPasswordResetRoute { path: "/request-password-reset", to: RequestPasswordResetPage }
+page RequestPasswordResetPage {
+  component: import { RequestPasswordResetPage } from "@src/features/auth/RequestPasswordResetPage"
+}
+
+route PasswordResetRoute { path: "/password-reset", to: PasswordResetPage }
+page PasswordResetPage {
+  component: import { PasswordResetPage } from "@src/features/auth/PasswordResetPage"
+}
+
+route VerifyEmailRoute { path: "/verify-email", to: VerifyEmailPage }
+page VerifyEmailPage {
+  component: import { VerifyEmailPage } from "@src/features/auth/VerifyEmailPage"
 }
 
 route ChatsRoute { path: "/chats", to: Chats }
@@ -65,6 +81,16 @@ page Settings {
 route DashboardRoute { path: "/", to: Dashboard }
 page Dashboard {
   component: import Dashboard from "@src/features/dashboard/index"
+}
+
+route EnvelopesRoute { path: "/envelopes", to: EnvelopesPage }
+page EnvelopesPage {
+  component: import { EnvelopesPage } from "@src/features/envelopes/EnvelopesPage.tsx"
+}
+
+route TransactionsRoute { path: "/transactions", to: TransactionsPage }
+page TransactionsPage {
+  component: import { TransactionsPage } from "@src/features/transactions/TransactionsPage.tsx"
 }
 
 route TasksRoute { path: "/tasks", to: Tasks }
@@ -107,4 +133,80 @@ route MaintenanceRoute { path: "/maintenance", to: Maintenance }
 page Maintenance {
   component: import Maintenance from "@src/features/errors/maintenance-error"
 }
+//#endregion
+
+//#region User Profile
+
+route UserProfileRoute { path: "/profile", to: UserProfilePage }
+page UserProfilePage {
+  component: import { UserProfilePage } from "@src/features/user/UserProfilePage.tsx"
+}
+
+action updateUserProfile {
+  fn: import { updateUserProfile } from "@src/features/user/operations.ts",
+  entities: [User]
+}
+
+//#endregion
+
+//#region Budget Profile
+
+route CreateBudgetProfileRoute { path: "/create-profile", to: CreateBudgetProfilePage }
+page CreateBudgetProfilePage {
+  component: import { CreateBudgetProfilePage } from "@src/features/budgets/CreateBudgetProfilePage.tsx"
+}
+
+action createBudgetProfile {
+  fn: import { createBudgetProfile } from "@src/features/budgets/operations.ts",
+  entities: [BudgetProfile, User]
+}
+
+//#endregion
+
+//#region Envelopes
+
+query getEnvelopes {
+  fn: import { getEnvelopes } from "@src/features/envelopes/operations.ts",
+  entities: [Envelope, BudgetProfile] // Need BudgetProfile to check ownership
+}
+
+action createEnvelope {
+  fn: import { createEnvelope } from "@src/features/envelopes/operations.ts",
+  entities: [Envelope, BudgetProfile] // Need BudgetProfile to link
+}
+
+action updateEnvelope {
+  fn: import { updateEnvelope } from "@src/features/envelopes/operations.ts",
+  entities: [Envelope, BudgetProfile] // Need BudgetProfile to check ownership
+}
+
+action deleteEnvelope {
+  fn: import { deleteEnvelope } from "@src/features/envelopes/operations.ts",
+  entities: [Envelope, BudgetProfile, Transaction] // Need Transaction to check count
+}
+
+//#endregion
+
+//#region Transactions
+
+query getTransactions {
+  fn: import { getTransactions } from "@src/features/transactions/operations.ts",
+  entities: [Transaction, BudgetProfile] // Need BudgetProfile for auth check
+}
+
+action createTransaction {
+  fn: import { createTransaction } from "@src/features/transactions/operations.ts",
+  entities: [Transaction, BudgetProfile, Envelope, User] // Need all for linking/checks
+}
+
+action updateTransaction {
+  fn: import { updateTransaction } from "@src/features/transactions/operations.ts",
+  entities: [Transaction, BudgetProfile, Envelope] // Need all for checks
+}
+
+action deleteTransaction {
+  fn: import { deleteTransaction } from "@src/features/transactions/operations.ts",
+  entities: [Transaction, BudgetProfile, Envelope] // Added Envelope
+}
+
 //#endregion

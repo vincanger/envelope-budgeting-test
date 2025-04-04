@@ -20,7 +20,8 @@ This is a Wasp full-stack web application project. Always consider the following
 - Reference the relevant `./ai/docs` files when writing or modifying feature code
 
 ### Common Issues
-- If imports aren't working, check path format ('wasp/...' not '@wasp/...')
+- If client imports aren't working, check path format ('wasp/...' not '@wasp/...')
+- Wasp config file imports should start with "@src/"
 - If entities aren't available in operations, check they're listed in the operation definition
 - If auth isn't working, ensure auth config is properly set up in main.wasp
 
@@ -119,6 +120,13 @@ This is a Wasp full-stack web application project. Always consider the following
     }
   }
   ```
+
+- Wasp Auth methods handle essential identity fields internally.
+- Your Prisma `User` model (specified in `auth.userEntity`) typically only needs the `id` field for Wasp to link the auth identity.
+- Avoid adding `email`, `emailVerified`, or `password` fields to your Prisma `User` model unless you have specific customization needs that require overriding Wasp's default behavior.
+- Add other *non-auth* related fields as needed (e.g., profile info, relations)
+
+- Note on Dummy Email Provider: When `emailSender: { provider: Dummy }` is configured in `main.wasp`, Wasp does not send actual emails. Instead, the content of verification/password reset emails, including the clickable link, will be printed directly to the server console where `wasp start` is running.
 
 ### Advanced Features
 
@@ -233,7 +241,7 @@ This is a Wasp full-stack web application project. Always consider the following
 - Add database models to the `schema.prisma` file, NOT to `main.wasp` as "entities"
 - Generally avoid adding a db.system or db.prisma property to the main wasp config file. This is taken care of in `schema.prisma`
 - Keep the `schema.prisma` within the root of the project
-- When updating schema.prisma, run `wasp db migrate dev` to apply changes
+- When updating schema.prisma, run `wasp db migrate-dev` to apply changes
 
 ### Wasp Operations
 
@@ -245,10 +253,10 @@ This is a Wasp full-stack web application project. Always consider the following
   - `action createTimeLog { fn: import { createTimeLog } from "@src/server/timeLogs/operations.js", entities: [TimeLog, Project] }`
 - Prioritize the use of Wasp operations for internal client-server communication and only create an API route for external communication to the server (e.g. for Stripe payments).
 - Use Wasp's useQuery hook, `import { useQuery } from 'wasp/client/operations'`, to fetch data from the server.
-- Call actions directly from the client (e.g. in a button click handler) unless you need optimistic updates (then use the useAction hook).
+- Client-side Wasp Actions: ALWAYS call actions directly (e.g., using async/await within event handlers). ONLY use the useAction hook if optimistic UI updates are specifically required.
 - Example operation implementation:
   ```typescript
-  // Server-side operation
+  // Server-side query implementation
   export const getTasks: GetTasks<void, Task[]> = async (_args, context) => {
     if (!context.user) {
       throw new HttpError(401, 'Not authorized');
@@ -260,6 +268,11 @@ This is a Wasp full-stack web application project. Always consider the following
   
   // Client-side usage
   const { data: tasks, isLoading, error } = useQuery(getTasks);
+
+  // Client-side action implementation
+  const handleDelete = async (taskId: string) => {
+    await deleteTask({ taskId });
+  };
   ```
 
 ### Wasp Auth
@@ -322,8 +335,9 @@ This is a Wasp full-stack web application project. Always consider the following
 
 ### Troubleshooting
 
+- Troubleshooting Wasp Errors: If you encounter TypeScript errors related to missing Wasp imports (e.g., from 'wasp/client/operations', 'wasp/entities', 'wasp/server') or unexpected type mismatches after modifying main.wasp or schema.prisma, try restarting the Wasp development server (stop and run 'wasp start' again) before further debugging.
 - If operations aren't working, check that entities are properly defined in the operation declaration
 - If auth isn't working, verify auth configuration in main.wasp and check that userEntity matches your User model
-- For database issues, check Prisma schema and run `wasp db migrate dev` to apply changes
+- For database issues, check Prisma schema and run `wasp db migrate-dev` to apply changes
 - For build errors, check import paths and ensure all dependencies are installed
 - Use the Wasp dev console and browser console for debugging information
