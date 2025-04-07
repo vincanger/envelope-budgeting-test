@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { logout } from 'wasp/client/auth';
 import {
   BadgeCheck,
   Bell,
@@ -6,6 +7,8 @@ import {
   CreditCard,
   LogOut,
   Sparkles,
+  UserCog,
+  Users,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar'
 import {
@@ -75,35 +78,22 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <Sparkles />
-                Upgrade to Pro
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <Link to={'/settings/account'} >
-                  <BadgeCheck />
-                  Account
+                <Link to={'/profile'} >
+                  <UserCog className='mr-2 h-4 w-4' />
+                  Profile Settings
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to='/settings'>
-                  <CreditCard />
-                  Billing
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to={'/settings/notifications'}>
-                  <Bell />
-                  Notifications
+                <Link to='/settings/members'>
+                  <Users className='mr-2 h-4 w-4' />
+                  Members
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <LogOut />
+            <DropdownMenuItem onClick={logout}>
+              <LogOut className='mr-2 h-4 w-4' />
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
