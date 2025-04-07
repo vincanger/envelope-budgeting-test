@@ -242,6 +242,7 @@ This is a Wasp full-stack web application project. Always consider the following
 - Generally avoid adding a db.system or db.prisma property to the main wasp config file. This is taken care of in `schema.prisma`
 - Keep the `schema.prisma` within the root of the project
 - When updating schema.prisma, run `wasp db migrate-dev` to apply changes
+- 'sqlite' is default database, but it can't be used with advanced features like background recurring jobs, or prisma enums. Use 'postgresql' instead and then make sure to run `wasp db start` to start the database in a separate terminal window.
 
 ### Wasp Operations
 
@@ -341,3 +342,10 @@ This is a Wasp full-stack web application project. Always consider the following
 - For database issues, check Prisma schema and run `wasp db migrate-dev` to apply changes
 - For build errors, check import paths and ensure all dependencies are installed
 - Use the Wasp dev console and browser console for debugging information
+
+### Wasp Auth User Fields
+- The `user` object in `context.user` or from `useAuth()` is an `AuthUser` object.
+- Auth-specific fields (email, username, verification status, provider IDs) live under `user.identities.{method}` (e.g., `user.identities.email.id`). Always check for `null` before accessing.
+- Wasp provides helpers like `getEmail(user)` and `getUsername(user)` (from `wasp/auth`) for easier access on the `AuthUser` object.
+- Standard `User` entities fetched via `context.entities.User.findMany()` etc., DO NOT automatically include these auth identity fields (like `email` or `username`) by default, even if the base Prisma model seems to have them due to Wasp's internal auth schema.
+- **Recommendation:** If you need frequent access to an identity field like `email` or `username` for *any* user (not just the logged-in one), add that field *directly* to your `User` model in `schema.prisma` and ensure it's populated correctly (e.g., during signup or profile update). This makes it a standard field accessible via `context.entities.User`.

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from 'wasp/client/operations';
-import { getTransactions, createTransaction, getEnvelopes } from 'wasp/client/operations';
+import { getTransactions, createTransaction, getEnvelopes, getCurrentUserProfile } from 'wasp/client/operations';
 import { type Transaction, type Envelope } from 'wasp/entities';
 // Assuming shadcn components are available via relative paths
 import { Button } from '../../components/ui/button';
@@ -11,9 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
 import { Calendar } from '../../components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, PlusCircle } from 'lucide-react';
 import { format } from 'date-fns';
-import { cn } from '../../lib/utils';
+import { cn } from '../../lib/client/utils';
 import { DayPicker } from 'react-day-picker';
 // Helper to format date (consider moving to a utils file later)
 const formatDate = (date: Date | string | undefined): string => {
@@ -26,10 +26,9 @@ const formatDate = (date: Date | string | undefined): string => {
 };
 
 export function TransactionsPage() {
-  // Fetch Transactions
-  const { data: transactions, isLoading: isLoadingTransactions, error: transactionsError } = useQuery(getTransactions);
-  // Fetch Envelopes for the dropdown
-  const { data: envelopes, isLoading: isLoadingEnvelopes, error: envelopesError } = useQuery(getEnvelopes);
+  const { data: transactions, isLoading: isLoadingTransactions, error: errorTransactions } = useQuery(getTransactions)
+  const { data: envelopes, isLoading: isLoadingEnvelopes, error: errorEnvelopes } = useQuery(getEnvelopes)
+  const { data: userProfile, isLoading: isLoadingProfile, error: errorProfile } = useQuery(getCurrentUserProfile);
 
   // State for the 'Add Transaction' dialog
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -39,11 +38,14 @@ export function TransactionsPage() {
   const [selectedEnvelopeId, setSelectedEnvelopeId] = useState<string>('');
   const [transactionType, setTransactionType] = useState<'EXPENSE' | 'INCOME' | 'TRANSFER'>('EXPENSE');
   const [isCreateLoading, setIsCreateLoading] = useState(false);
-  const [createError, setCreateError] = useState<Error | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  // Determine if user can create transactions (MEMBER, ADMIN, or OWNER)
+  const canCreate = userProfile && ['MEMBER', 'ADMIN', 'OWNER'].includes(userProfile.role);
 
   const handleCreateTransaction = async () => {
-    setIsCreateLoading(true);
     setCreateError(null);
+    setIsCreateLoading(true);
     try {
       const numericAmount = parseFloat(amount);
       const envelopeId = parseInt(selectedEnvelopeId, 10);
@@ -69,10 +71,15 @@ export function TransactionsPage() {
       setSelectedEnvelopeId('');
       setTransactionType('EXPENSE');
       setIsAddDialogOpen(false);
-
-    } catch (err: any) {
-      setCreateError(err);
-      alert(`Error creating transaction: ${err.message || 'Unknown error'}`);
+      resetAddForm();
+    } catch (err) {
+      if (err instanceof Error) {
+        setCreateError(err.message);
+      } else if (typeof err === 'string') {
+        setCreateError(err);
+      } else {
+        setCreateError('An unexpected error occurred');
+      }
     } finally {
       setIsCreateLoading(false);
     }
@@ -84,105 +91,124 @@ export function TransactionsPage() {
       setDate(new Date());
       setSelectedEnvelopeId('');
       setTransactionType('EXPENSE');
-      setCreateError(null);
   }
+
+  // Separate loading and error handling
+  if (isLoadingTransactions || isLoadingEnvelopes || isLoadingProfile) return 'Loading...'
+  if (errorTransactions) {
+    const message = errorTransactions instanceof Error ? errorTransactions.message : 'Unknown error';
+    return `Error loading transactions: ${message}`;
+  }
+  if (errorEnvelopes) {
+    const message = errorEnvelopes instanceof Error ? errorEnvelopes.message : 'Unknown error';
+    return `Error loading envelopes: ${message}`;
+  }
+  if (errorProfile) {
+    const message = errorProfile instanceof Error ? errorProfile.message : 'Unknown error';
+    return `Error loading user profile: ${message}`;
+  }
+  // If we reach here, all queries succeeded
 
   return (
     <div className="p-4">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold">Transactions</h1>
-        {/* Add Transaction Dialog Trigger */}
-        <Dialog open={isAddDialogOpen} onOpenChange={(open) => { 
-            setIsAddDialogOpen(open);
-            if (!open) resetAddForm(); // Reset form when closing
-          }}>
-          <Button onClick={() => setIsAddDialogOpen(true)} disabled={isLoadingEnvelopes}>Add Transaction</Button>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Add New Transaction</DialogTitle>
-              <DialogDescription>Record an expense or income.</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-               {/* Description */}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="description" className="text-right">Description</Label>
-                <Input id="description" value={description} onChange={(e) => setDescription(e.target.value)} className="col-span-3" required />
-              </div>
-              {/* Amount */}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="amount" className="text-right">Amount</Label>
-                <Input id="amount" type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className="col-span-3" required />
-              </div>
-              {/* Date Picker Implementation - Adjusted */}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right">Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "col-span-3 justify-start text-left font-normal", // Removed fixed width
-                        !date && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {date ? format(date, "PPP") : <span>Pick a date</span>} 
-                    </Button>
-                  </PopoverTrigger>
-                  {/* Added align="start" */}
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar 
-                      mode="single"
-                      selected={date}
-                      onSelect={setDate}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              {/* Envelope */}
-               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="envelope" className="text-right">Envelope</Label>
-                <Select value={selectedEnvelopeId} onValueChange={setSelectedEnvelopeId}>
+        {/* Conditionally disable button based on role, loading, and existence of envelopes */}
+        <Button 
+            onClick={() => setIsAddDialogOpen(true)} 
+            disabled={isLoadingProfile || !canCreate || !envelopes || envelopes.length === 0} 
+            title={!canCreate ? 'Insufficient permissions' : (!envelopes || envelopes.length === 0) ? 'Create an envelope first' : ''}
+        >
+          <PlusCircle className="mr-2 h-4 w-4" /> Add Transaction
+        </Button>
+      </div>
+
+      {/* Add Transaction Dialog */} 
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add Transaction</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {/* Description */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="description" className="text-right">Description</Label>
+              <Input id="description" value={description} onChange={(e) => setDescription(e.target.value)} className="col-span-3" required />
+            </div>
+            {/* Amount */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="amount" className="text-right">Amount</Label>
+              <Input id="amount" type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className="col-span-3" required />
+            </div>
+            {/* Date Picker Implementation - Adjusted */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "col-span-3 justify-start text-left font-normal", // Removed fixed width
+                      !date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date ? format(date, "PPP") : <span>Pick a date</span>} 
+                  </Button>
+                </PopoverTrigger>
+                {/* Added align="start" */}
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar 
+                    mode="single"
+                    selected={date}
+                    onSelect={setDate}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            {/* Envelope */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="envelope" className="text-right">Envelope</Label>
+              <Select value={selectedEnvelopeId} onValueChange={setSelectedEnvelopeId}>
+                  <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Select an envelope..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                      {isLoadingEnvelopes && <SelectItem value="loading" disabled>Loading...</SelectItem>}
+                      {errorEnvelopes && <SelectItem value="error" disabled>Error loading</SelectItem>}
+                      {envelopes?.map((env) => (
+                          <SelectItem key={env.id} value={String(env.id)}>{env.name}</SelectItem>
+                      ))}
+                  </SelectContent>
+              </Select>
+            </div>
+            {/* Type */}
+            <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="type" className="text-right">Type</Label>
+                <Select value={transactionType} onValueChange={(value: 'EXPENSE' | 'INCOME') => setTransactionType(value)}>
                     <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Select an envelope..." />
+                        <SelectValue placeholder="Select type..." />
                     </SelectTrigger>
                     <SelectContent>
-                        {isLoadingEnvelopes && <SelectItem value="loading" disabled>Loading...</SelectItem>}
-                        {envelopesError && <SelectItem value="error" disabled>Error loading</SelectItem>}
-                        {envelopes?.map((env) => (
-                            <SelectItem key={env.id} value={String(env.id)}>{env.name}</SelectItem>
-                        ))}
+                        <SelectItem value="EXPENSE">Expense</SelectItem>
+                        <SelectItem value="INCOME">Income</SelectItem>
+                        {/* <SelectItem value="TRANSFER">Transfer</SelectItem> */}
                     </SelectContent>
                 </Select>
-              </div>
-               {/* Type */}
-               <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="type" className="text-right">Type</Label>
-                  <Select value={transactionType} onValueChange={(value: 'EXPENSE' | 'INCOME') => setTransactionType(value)}>
-                      <SelectTrigger className="col-span-3">
-                          <SelectValue placeholder="Select type..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                          <SelectItem value="EXPENSE">Expense</SelectItem>
-                          <SelectItem value="INCOME">Income</SelectItem>
-                          {/* <SelectItem value="TRANSFER">Transfer</SelectItem> */}
-                      </SelectContent>
-                  </Select>
-              </div>
-              {/* Error Display */}
-              {createError && (
-                <p className="col-span-4 text-red-500 text-sm text-center">Error: {createError.message || 'Failed to create.'}</p>
-              )}
             </div>
-            <DialogFooter>
-              <Button type="button" variant="secondary" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleCreateTransaction} disabled={isCreateLoading}>
-                {isCreateLoading ? 'Saving...' : 'Save Transaction'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+          </div>
+          {createError && <p className="text-red-500 text-sm px-6 pb-4">Error: {createError}</p>}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} disabled={isCreateLoading}>Cancel</Button>
+            <Button 
+                onClick={handleCreateTransaction} 
+                disabled={isCreateLoading || !description || !amount || !date || !selectedEnvelopeId}
+            >
+              {isCreateLoading ? 'Adding...' : 'Add Transaction'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Display Transactions Table */}
       <div className="mt-6 border rounded-lg">
@@ -199,7 +225,9 @@ export function TransactionsPage() {
           </TableHeader>
           <TableBody>
             {isLoadingTransactions && <TableRow><TableCell colSpan={6}>Loading transactions...</TableCell></TableRow>}
-            {transactionsError && <TableRow><TableCell colSpan={6} className="text-red-500">Error loading transactions: {transactionsError.message}</TableCell></TableRow>}
+            {errorTransactions && (
+              <TableRow><TableCell colSpan={6} className="text-red-500">Error loading transactions: {(errorTransactions as Error)?.message ?? 'Unknown error'}</TableCell></TableRow>
+            )}
             {transactions && transactions.length === 0 && <TableRow><TableCell colSpan={6}>No transactions recorded yet.</TableCell></TableRow>}
             {transactions?.map((tx) => (
               <TableRow key={tx.id}>

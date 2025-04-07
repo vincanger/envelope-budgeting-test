@@ -22,19 +22,26 @@ app envelopeBudgeter {
         },
         passwordReset: {
           clientRoute: PasswordResetRoute
-        }
-      }
+        },
+        userSignupFields: import { getEmailUserFields } from "@src/features/auth/userSignupFields.ts"
+      },
     },
     onAuthFailedRedirectTo: "/sign-in",
     onAuthSucceededRedirectTo: "/",
+    onBeforeSignup: import { onBeforeSignup } from "@src/server/authHooks.ts",
+    onAfterSignup: import { updateInvitationStatus } from "@src/server/authHooks.ts",
   },
   emailSender: {
-    provider: Dummy
+    provider: Dummy,
+    defaultFrom: {
+      name: "Budgeting App",
+      email: "noreply@budgetapp.dev"
+    }
   },
   client: {
     rootComponent: import Main from "@src/main",
     setupFn: import QuerySetup from "@src/config/querySetup",
-  }
+  },
 }
 
 route SignupRoute { path: "/sign-up", to: Signup }
@@ -147,6 +154,16 @@ action updateUserProfile {
   entities: [User]
 }
 
+query getCurrentUserProfile {
+  fn: import { getCurrentUserProfile } from "@src/features/user/operations.js",
+  entities: [UserBudgetProfile]
+}
+
+query getUsers {
+  fn: import { getUsers } from "@src/features/user/operations.ts",
+  entities: [User] // Only needs User entity access
+}
+
 //#endregion
 
 //#region Budget Profile
@@ -161,28 +178,64 @@ action createBudgetProfile {
   entities: [BudgetProfile, User]
 }
 
+query getBudgetProfileMembers {
+  fn: import { getBudgetProfileMembers } from "@src/features/budgets/operations.ts",
+  // Needs UserBudgetProfile for the check and result, User for user details, BudgetProfile for context
+  entities: [UserBudgetProfile, User, BudgetProfile] 
+}
+
+action inviteUser {
+  fn: import { inviteUser } from "@src/features/budgets/operations.ts",
+  // Needs User to find invitee, UserBudgetProfile to check/create, BudgetProfile for context
+  entities: [User, UserBudgetProfile, BudgetProfile, Invitation]
+}
+
+query getPendingInvitations {
+  fn: import { getPendingInvitations } from "@src/features/budgets/operations.ts",
+  // Needs Invitation to fetch, UserBudgetProfile/BudgetProfile for permissions
+  entities: [Invitation, UserBudgetProfile, BudgetProfile]
+}
+
+action revokeInvitation {
+  fn: import { revokeInvitation } from "@src/features/budgets/operations.ts",
+  // Needs Invitation to delete, UserBudgetProfile/BudgetProfile for permissions
+  entities: [Invitation, UserBudgetProfile, BudgetProfile]
+}
+
+action updateMemberRole {
+  fn: import { updateMemberRole } from "@src/features/budgets/operations.ts",
+  // Needs UserBudgetProfile to update and check permissions, BudgetProfile for context
+  entities: [UserBudgetProfile, BudgetProfile]
+}
+
+action removeMember {
+  fn: import { removeMember } from "@src/features/budgets/operations.ts",
+  // Needs UserBudgetProfile to delete and check permissions, BudgetProfile for context
+  entities: [UserBudgetProfile, BudgetProfile]
+}
+
 //#endregion
 
 //#region Envelopes
 
 query getEnvelopes {
   fn: import { getEnvelopes } from "@src/features/envelopes/operations.ts",
-  entities: [Envelope, BudgetProfile] // Need BudgetProfile to check ownership
+  entities: [Envelope, BudgetProfile, UserBudgetProfile] // Need BudgetProfile to check ownership
 }
 
 action createEnvelope {
   fn: import { createEnvelope } from "@src/features/envelopes/operations.ts",
-  entities: [Envelope, BudgetProfile] // Need BudgetProfile to link
+  entities: [Envelope, BudgetProfile, UserBudgetProfile] // Need BudgetProfile to link
 }
 
 action updateEnvelope {
   fn: import { updateEnvelope } from "@src/features/envelopes/operations.ts",
-  entities: [Envelope, BudgetProfile] // Need BudgetProfile to check ownership
+  entities: [Envelope, BudgetProfile, UserBudgetProfile] // Need BudgetProfile to check ownership
 }
 
 action deleteEnvelope {
   fn: import { deleteEnvelope } from "@src/features/envelopes/operations.ts",
-  entities: [Envelope, BudgetProfile, Transaction] // Need Transaction to check count
+  entities: [Envelope, BudgetProfile, UserBudgetProfile, Transaction] // Need Transaction to check count
 }
 
 //#endregion
@@ -191,22 +244,30 @@ action deleteEnvelope {
 
 query getTransactions {
   fn: import { getTransactions } from "@src/features/transactions/operations.ts",
-  entities: [Transaction, BudgetProfile] // Need BudgetProfile for auth check
+  entities: [Transaction, BudgetProfile, UserBudgetProfile] // Need BudgetProfile for auth check
 }
 
 action createTransaction {
   fn: import { createTransaction } from "@src/features/transactions/operations.ts",
-  entities: [Transaction, BudgetProfile, Envelope, User] // Need all for linking/checks
+  entities: [Transaction, BudgetProfile, UserBudgetProfile, Envelope, User] // Need all for linking/checks
 }
 
 action updateTransaction {
   fn: import { updateTransaction } from "@src/features/transactions/operations.ts",
-  entities: [Transaction, BudgetProfile, Envelope] // Need all for checks
+  entities: [Transaction, BudgetProfile, UserBudgetProfile, Envelope] // Need all for checks
 }
 
 action deleteTransaction {
   fn: import { deleteTransaction } from "@src/features/transactions/operations.ts",
-  entities: [Transaction, BudgetProfile, Envelope] // Added Envelope
+  entities: [Transaction, BudgetProfile, UserBudgetProfile, Envelope] // Added Envelope
 }
 
+//#endregion
+
+//#region Settings
+route SettingsMembersRoute { path: "/settings/members", to: SettingsMembersPage }
+page SettingsMembersPage { 
+  component: import { MembersPage } from "@src/features/settings/MembersPage.tsx",
+  authRequired: true
+}
 //#endregion

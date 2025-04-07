@@ -1,5 +1,5 @@
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   // Wasp requires that the url is set to the DATABASE_URL environment variable.
   url      = env("DATABASE_URL")
 }
@@ -13,18 +13,22 @@ generator client {
 
 model User {
   id              Int      @id @default(autoincrement()) // Using Int ID as per PRD and Wasp convention
-  // email           String   @unique // Managed by Wasp Auth
-  // emailVerified   Boolean  @default(false) // Managed by Wasp Auth
-  // password        String   // Managed by Wasp auth
+  email           String   @unique // Add explicit email field
+  displayName     String?           // Optional display name
+  avatarUrl       String?           // Optional avatar URL
+  // Wasp internally manages auth-related fields like password hash, verification status etc.
+  // We don't need emailVerified or password fields here unless customizing Wasp's auth flow.
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  lastLoginAt     DateTime?
+  lastLoginAt     DateTime? // Optional: Track last login
 
   // Relations
   budgetProfile   BudgetProfile? @relation("OwnedProfile")
   memberProfiles  UserBudgetProfile[]
   // notifications   Notification[] // Deferred to later phase
   transactions    Transaction[]    @relation("CreatedTransactions")
+  sentInvitations     Invitation[] @relation("SentInvitations")
+  acceptedInvitations Invitation[] @relation("AcceptedInvitations")
 }
 
 model BudgetProfile {
@@ -41,18 +45,18 @@ model BudgetProfile {
   members     UserBudgetProfile[]
   envelopes   Envelope[]
   transactions Transaction[]
+  invitations Invitation[] // Relation to invitations sent for this profile
 }
 
 model UserBudgetProfile {
-  id              Int           @id @default(autoincrement())
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              Int      @id @default(autoincrement())
   userId          Int
-  budgetProfile   BudgetProfile @relation(fields: [budgetProfileId], references: [id], onDelete: Cascade)
   budgetProfileId Int
-  role            String        @default("VIEWER") // EDITOR, VIEWER
-  permissions     String        // Store as comma-separated string, handle in application logic
-  joinedAt        DateTime      @default(now())
-  lastAccessedAt  DateTime      @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  budgetProfile   BudgetProfile @relation(fields: [budgetProfileId], references: [id], onDelete: Cascade)
+  role            String   // Changed from permissions: String - Represents the user's role (e.g., OWNER, ADMIN, MEMBER)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@unique([userId, budgetProfileId])
   @@index([userId])
@@ -98,6 +102,36 @@ model Transaction {
   @@index([envelopeId])
   @@index([budgetProfileId])
   @@index([createdById])
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  DECLINED // Optional
+}
+
+model Invitation {
+  id              String      @id @default(uuid())
+  email           String      // Email address invited
+  budgetProfileId Int         // ID of the profile they are invited to
+  budgetProfile   BudgetProfile @relation(fields: [budgetProfileId], references: [id], onDelete: Cascade)
+  role            String      // Role assigned upon acceptance (e.g., MEMBER, ADMIN)
+  token           String      @unique // Secure, unique token for the invitation link
+  status          InvitationStatus @default(PENDING)
+  expiresAt       DateTime    // When the invitation expires
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  invitedByUserId Int?        // Optional: ID of the user who sent the invite
+  invitedByUser   User?       @relation("SentInvitations", fields: [invitedByUserId], references: [id], onDelete: SetNull)
+
+  acceptedByUserId Int?       // Optional: ID of the user who accepted the invite
+  acceptedByUser  User?       @relation("AcceptedInvitations", fields: [acceptedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([email])
+  @@index([budgetProfileId])
+  @@index([status])
 }
 
 // --- Models deferred to later phases ---

@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { IconEye, IconEyeOff } from '@tabler/icons-react'
-import { cn } from '../lib/utils'
+import { cn } from '../lib/client/utils'
 import { Button } from './ui/button'
 
 type PasswordInputProps = Omit<

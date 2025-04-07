@@ -6,29 +6,17 @@ import type {
   UpdateEnvelope,
   DeleteEnvelope
 } from 'wasp/server/operations'
-
-// Helper function to get the user's budget profile ID
-async function getUserBudgetProfileId(context: any): Promise<number> {
-  if (!context.user) {
-    throw new HttpError(401, 'User not authenticated');
-  }
-  const budgetProfile = await context.entities.BudgetProfile.findUnique({
-    where: { ownerId: context.user.id },
-    select: { id: true },
-  });
-
-  if (!budgetProfile) {
-    // This might happen if the user hasn't created a profile yet
-    // Or if somehow the user context exists but profile doesn't - should be rare
-    throw new HttpError(404, 'Budget profile not found for the user.');
-  }
-  return budgetProfile.id;
-}
+import { ensureUserRole, getCurrentBudgetProfileId } from '../../lib/server/permissions'
 
 // ========= Queries =========
 
+// GET should generally be allowed for any member (or based on future fine-grained permissions)
 export const getEnvelopes: GetEnvelopes<void, Envelope[]> = async (_args, context) => {
-  const budgetProfileId = await getUserBudgetProfileId(context);
+  // Use the revised helper
+  const budgetProfileId = await getCurrentBudgetProfileId(context); 
+
+  // Ensure the user is at least a MEMBER of this profile
+  await ensureUserRole(context, budgetProfileId, ['MEMBER', 'ADMIN', 'OWNER']);
 
   return context.entities.Envelope.findMany({
     where: {
@@ -43,8 +31,13 @@ export const getEnvelopes: GetEnvelopes<void, Envelope[]> = async (_args, contex
 
 type CreateEnvelopeInput = Pick<Envelope, 'name' | 'amount' | 'category' | 'color' | 'icon'>
 
+// Creating might require ADMIN or OWNER role
 export const createEnvelope: CreateEnvelope<CreateEnvelopeInput, Envelope> = async (args, context) => {
-  const budgetProfileId = await getUserBudgetProfileId(context);
+  // Use the revised helper
+  const budgetProfileId = await getCurrentBudgetProfileId(context);
+
+  // Ensure the user has permission to create envelopes in this profile (e.g., ADMIN, OWNER)
+  await ensureUserRole(context, budgetProfileId, ['ADMIN', 'OWNER']);
 
   return context.entities.Envelope.create({
     data: {
@@ -62,22 +55,24 @@ export const createEnvelope: CreateEnvelope<CreateEnvelopeInput, Envelope> = asy
 
 type UpdateEnvelopeInput = Partial<Pick<Envelope, 'name' | 'amount' | 'category' | 'color' | 'icon' | 'isArchived'>> & { id: number }
 
+// Updating requires ADMIN or OWNER role
 export const updateEnvelope: UpdateEnvelope<UpdateEnvelopeInput, Envelope> = async (args, context) => {
-  const budgetProfileId = await getUserBudgetProfileId(context);
   const { id, ...updateData } = args;
 
-  // Verify the envelope belongs to the user's budget profile
-  const envelope = await context.entities.Envelope.findFirst({
-    where: {
-      id: id,
-      budgetProfileId: budgetProfileId,
-    }
+  // Find the envelope first to get its budgetProfileId
+  const envelope = await context.entities.Envelope.findUnique({
+    where: { id: id },
+    select: { budgetProfileId: true } // Select only the profile ID
   });
 
   if (!envelope) {
-    throw new HttpError(404, 'Envelope not found or access denied.');
+    throw new HttpError(404, 'Envelope not found.');
   }
 
+  // Ensure the user has permission to update envelopes in this profile (e.g., ADMIN, OWNER)
+  await ensureUserRole(context, envelope.budgetProfileId, ['ADMIN', 'OWNER']);
+
+  // Now that permission is verified, perform the update
   return context.entities.Envelope.update({
     where: { id: id },
     data: updateData,
@@ -86,30 +81,32 @@ export const updateEnvelope: UpdateEnvelope<UpdateEnvelopeInput, Envelope> = asy
 
 type DeleteEnvelopeInput = { id: number }
 
+// Deleting requires ADMIN or OWNER role
 export const deleteEnvelope: DeleteEnvelope<DeleteEnvelopeInput, Envelope> = async (args, context) => {
-  const budgetProfileId = await getUserBudgetProfileId(context);
   const { id } = args;
 
-  // Verify the envelope belongs to the user's budget profile
-  const envelope = await context.entities.Envelope.findFirst({
-    where: {
-      id: id,
-      budgetProfileId: budgetProfileId,
-    },
-    include: { _count: { select: { transactions: true } } } // Check for transactions
+  // Find the envelope to get its profile ID and transaction count
+  const envelope = await context.entities.Envelope.findUnique({
+    where: { id: id },
+    select: { 
+      budgetProfileId: true, 
+      _count: { select: { transactions: true } } // Check for transactions
+    }
   });
 
   if (!envelope) {
-    throw new HttpError(404, 'Envelope not found or access denied.');
+    throw new HttpError(404, 'Envelope not found.');
   }
 
-  // Prevent deleting envelopes with transactions based on schema's onDelete: Restrict
-  // Although Prisma prevents this at DB level, check here for a cleaner error
+  // Ensure the user has permission to delete envelopes in this profile (e.g., ADMIN, OWNER)
+  await ensureUserRole(context, envelope.budgetProfileId, ['ADMIN', 'OWNER']);
+
+  // Check for transactions before deleting
   if (envelope._count.transactions > 0) {
      throw new HttpError(400, 'Cannot delete envelope with existing transactions. Archive it instead or reassign transactions.');
   }
 
-  // If no transactions, proceed with deletion
+  // If permission is granted and no transactions exist, proceed with deletion
   return context.entities.Envelope.delete({
     where: { id: id },
   });

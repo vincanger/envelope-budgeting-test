@@ -61,25 +61,25 @@ This plan outlines the implementation of the envelope budgeting app using a modi
 
 ## Phase 3: User Management
 ### 3.1 Enhanced Auth
-- Check that Wasp's email and password Auth is implemented correctly.
+- [x] Check that Wasp's email and password Auth is implemented correctly.
 
 ### 3.2 User Roles
-- Add role-based access control
-- Implement permission system
-- Create role management interface
-- Add role-based UI elements
+- [x] Add role-based access control (Backend: role field, checks)
+- [x] Implement permission system (Backend: basic hierarchy)
+- [x] Create role management interface (Basic: Member viewing page created)
+- [x] Add role-based UI elements (Basic: Disable actions based on role)
 
 ### 3.3 Collaboration
-- Implement user invitations
-- Add member management
-- Create shared access controls
-- Implement real-time updates
+- [x] Implement user invitations (Backend action, signup hook for acceptance)
+- [x] Add member management (Basic: View members, Revoke pending invites)
+- [ ] Create shared access controls (Deferred)
+- [ ] Implement real-time updates (Deferred)
 
 ### 3.4 User Settings
-- Add notification preferences
-- Implement currency settings
-- Create profile customization
-- Add user activity tracking
+- [ ] Add notification preferences (Deferred)
+- [ ] Implement currency settings (Deferred)
+- [x] Create profile customization
+- [ ] Add user activity tracking (Deferred)
 
 ## Phase 4: Advanced Features
 ### 4.1 Transaction Types

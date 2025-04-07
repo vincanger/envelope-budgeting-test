@@ -1,25 +1,23 @@
 import './index.css';
 
 import { routes } from 'wasp/client/router';
-import { useMemo, useEffect } from 'react'
+import { useMemo, useEffect } from 'react';
 import { FontProvider } from './context/font-context';
 import { ThemeProvider } from './context/theme-context';
 import { Outlet, useLocation } from 'react-router-dom';
 import { SearchProvider } from './context/search-context';
 import { SidebarProvider } from './components/ui/sidebar';
 import SkipToMain from './components/skip-to-main';
+import { Toaster } from './components/ui/toaster';
 import { AppSidebar } from './components/layout/app-sidebar';
-import { cn } from './lib/utils';
+import { cn } from './lib/client/utils';
 
 // Render the app
 export default function Main() {
   const location = useLocation();
   const isAuthPage = useMemo(() => {
     const path = location.pathname;
-    const authPaths = [
-      routes.LoginRoute.to,
-      routes.SignupRoute.to,
-    ] as string[];
+    const authPaths = [routes.LoginRoute.to, routes.SignupRoute.to] as string[];
     return authPaths.includes(path);
   }, [location.pathname]);
   return (
@@ -43,6 +41,7 @@ export default function Main() {
             >
               <Outlet />
             </div>
+            <Toaster />
           </SidebarProvider>
         </SearchProvider>
       </FontProvider>
