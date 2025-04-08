@@ -87,16 +87,19 @@ page Settings {
 
 route DashboardRoute { path: "/", to: Dashboard }
 page Dashboard {
+  // authRequired: true,
   component: import Dashboard from "@src/features/dashboard/index"
 }
 
 route EnvelopesRoute { path: "/envelopes", to: EnvelopesPage }
 page EnvelopesPage {
+  authRequired: true,
   component: import { EnvelopesPage } from "@src/features/envelopes/EnvelopesPage.tsx"
 }
 
 route TransactionsRoute { path: "/transactions", to: TransactionsPage }
 page TransactionsPage {
+  authRequired: true,
   component: import { TransactionsPage } from "@src/features/transactions/TransactionsPage.tsx"
 }
 
@@ -146,6 +149,7 @@ page Maintenance {
 
 route UserProfileRoute { path: "/profile", to: UserProfilePage }
 page UserProfilePage {
+  authRequired: true,
   component: import { UserProfilePage } from "@src/features/user/UserProfilePage.tsx"
 }
 
@@ -170,6 +174,7 @@ query getUsers {
 
 route CreateBudgetProfileRoute { path: "/create-profile", to: CreateBudgetProfilePage }
 page CreateBudgetProfilePage {
+  authRequired: true,
   component: import { CreateBudgetProfilePage } from "@src/features/budgets/CreateBudgetProfilePage.tsx"
 }
 
@@ -212,6 +217,11 @@ action removeMember {
   fn: import { removeMember } from "@src/features/budgets/operations.ts",
   // Needs UserBudgetProfile to delete and check permissions, BudgetProfile for context
   entities: [UserBudgetProfile, BudgetProfile]
+}
+
+query getUserBudgetProfiles {
+  fn: import { getUserBudgetProfiles } from "@src/features/budgets/operations.ts",
+  entities: [UserBudgetProfile] // Only needs to check existence of user's profile links
 }
 
 //#endregion
@@ -267,7 +277,7 @@ action deleteTransaction {
 //#region Settings
 route SettingsMembersRoute { path: "/settings/members", to: SettingsMembersPage }
 page SettingsMembersPage { 
+  authRequired: true,
   component: import { MembersPage } from "@src/features/settings/MembersPage.tsx",
-  authRequired: true
 }
 //#endregion

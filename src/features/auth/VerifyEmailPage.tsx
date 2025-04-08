@@ -2,7 +2,7 @@ import React from 'react';
 import { VerifyEmailForm } from 'wasp/client/auth';
 import { Card, CardContent } from '../../components/ui/card';
 import { useTheme } from '../../hooks/use-theme';
-
+import { Link } from 'wasp/client/router';
 export function VerifyEmailPage() {
   const { colors } = useTheme();
 
@@ -15,6 +15,11 @@ export function VerifyEmailPage() {
               colors,
             }}
           />
+          <div className="mt-4 text-center text-sm">
+            <Link to="/sign-in" className="text-primary hover:underline">
+              Go to Sign in
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>

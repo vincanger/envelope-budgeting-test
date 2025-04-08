@@ -248,6 +248,7 @@ This is a Wasp full-stack web application project. Always consider the following
 
 - Types are generated automatically from the function definition in the wasp config file
   - `import type { GetTimeLogs, CreateTimeLog, UpdateTimeLog } from 'wasp/server/operations'`
+  - If the types aren't available after updating the wasp config file, wait a moment for recompilation to complete and try again. If the issue persists, try restarting the Wasp development server (stop and run 'wasp start' again)
 - Wasp also generates entity types based on the models in `schema.prisma`
   - `import type { Project, TimeLog } from 'wasp/entities'`
 - Make sure that all Entities that should be included in the operations context are defined in its definition in the wasp config file

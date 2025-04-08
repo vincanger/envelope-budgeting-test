@@ -1,6 +1,7 @@
 import { SignupForm } from 'wasp/client/auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { useTheme } from '../../hooks/use-theme';
+import { Link } from 'wasp/client/router';
 
 export function Signup() {
   const { colors } = useTheme();
@@ -14,6 +15,12 @@ export function Signup() {
               colors,
             }}
           />
+          <div className="mt-4 text-center text-sm">
+            Already have an account?{' '}
+            <Link to="/sign-in" className="text-primary hover:underline">
+              Sign in
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>

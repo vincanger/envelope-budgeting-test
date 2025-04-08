@@ -1,6 +1,6 @@
 import { HttpError } from 'wasp/server'
 import type { BudgetProfile, User, UserBudgetProfile, Invitation } from 'wasp/entities'
-import type { CreateBudgetProfile, GetBudgetProfileMembers, InviteUser, GetPendingInvitations, RevokeInvitation, UpdateMemberRole, RemoveMember } from 'wasp/server/operations'
+import type { CreateBudgetProfile, GetBudgetProfileMembers, InviteUser, GetPendingInvitations, RevokeInvitation, UpdateMemberRole, RemoveMember, GetUserBudgetProfiles } from 'wasp/server/operations'
 import { ensureUserRole, getCurrentBudgetProfileId } from '../../lib/server/permissions'
 // Remove prisma import if no longer needed here
 // import { prisma } from 'wasp/server' 
@@ -383,4 +383,21 @@ export const removeMember: RemoveMember<RemoveMemberInput, UserBudgetProfile> = 
 
   console.log(`Removed user ${targetUserId} from profile ${budgetProfileId}.`);
   return removedLink; // Return the deleted data
+}; 
+
+// Implementation for the new query
+// Add explicit any types until Wasp generates the correct type
+export const getUserBudgetProfiles: GetUserBudgetProfiles<void, UserBudgetProfile[]> = async (_args, context) => {
+  if (!context.user) {
+    throw new HttpError(401, 'User not authenticated');
+  }
+
+  // Find all budget profiles the user is associated with
+  const profiles = await context.entities.UserBudgetProfile.findMany({
+    where: {
+      userId: context.user.id
+    },
+  });
+
+  return profiles;
 }; 

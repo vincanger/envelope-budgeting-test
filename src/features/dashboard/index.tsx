@@ -1,8 +1,9 @@
-import React from 'react';
-import { getEnvelopes } from 'wasp/client/operations';
+import React, { useEffect } from 'react';
+import { getEnvelopes, getUserBudgetProfiles } from 'wasp/client/operations';
 import { useQuery } from 'wasp/client/operations';
-import { type Envelope } from 'wasp/entities';
+import { type Envelope, type UserBudgetProfile } from 'wasp/entities';
 import { Link } from 'wasp/client/router';
+import { useNavigate } from 'react-router-dom';
 import { Routes, routes } from 'wasp/client/router';
 import { Button } from '../../components/ui/button';
 import {
@@ -26,7 +27,16 @@ const formatCurrency = (value: number) => {
 };
 
 export default function Dashboard() {
-  const { data: envelopes, isLoading, error } = useQuery(getEnvelopes);
+  const navigate = useNavigate();
+  const { data: envelopes, isLoading: isLoadingEnvelopes, error: errorEnvelopes } = useQuery(getEnvelopes);
+  const { data: budgetProfiles, isLoading: isLoadingProfiles, error: errorProfiles } = useQuery(getUserBudgetProfiles);
+
+  useEffect(() => {
+    if (!isLoadingProfiles && budgetProfiles && budgetProfiles.length === 0) {
+      console.log('No budget profiles found, redirecting to create profile...');
+      navigate(routes.CreateBudgetProfileRoute.to);
+    }
+  }, [isLoadingProfiles, budgetProfiles]);
 
   const summary = React.useMemo(() => {
     if (!envelopes) return { totalBudgeted: 0, totalSpent: 0, totalRemaining: 0, count: 0 };
@@ -39,6 +49,14 @@ export default function Dashboard() {
       count: envelopes.length,
     };
   }, [envelopes]);
+
+  if (isLoadingProfiles) {
+    return <div>Loading user data...</div>;
+  }
+
+  if (errorProfiles) {
+    return <div className="p-4 text-red-500">Error checking user profile: {errorProfiles.message}</div>;
+  }
 
   return (
     <>
@@ -56,10 +74,10 @@ export default function Dashboard() {
           <h1 className='text-2xl font-bold tracking-tight'>Overview</h1>
         </div>
         
-        {isLoading && <p>Loading dashboard data...</p>}
-        {error && <p className="text-red-500">Error loading data: {error.message}</p>}
+        {isLoadingEnvelopes && <p>Loading dashboard data...</p>}
+        {errorEnvelopes && <p className="text-red-500">Error loading data: {errorEnvelopes.message}</p>}
 
-        {!isLoading && !error && (
+        {!isLoadingEnvelopes && !errorEnvelopes && (
           <>
             <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6'>
               <Card>

@@ -17,7 +17,7 @@ export default function Main() {
   const location = useLocation();
   const isAuthPage = useMemo(() => {
     const path = location.pathname;
-    const authPaths = [routes.LoginRoute.to, routes.SignupRoute.to] as string[];
+    const authPaths = [routes.LoginRoute.to, routes.SignupRoute.to, routes.VerifyEmailRoute.to, routes.PasswordResetRoute, routes.RequestPasswordResetRoute.to] as string[];
     return authPaths.includes(path);
   }, [location.pathname]);
   return (
