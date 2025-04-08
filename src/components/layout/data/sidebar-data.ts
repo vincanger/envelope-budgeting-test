@@ -9,6 +9,7 @@ import {
   IconLock,
   IconLockAccess,
   IconMessages,
+  IconMoneybag,
   IconNotification,
   IconPackages,
   IconPalette,
@@ -30,9 +31,9 @@ export const sidebarData: SidebarData = {
   },
   teams: [
     {
-      name: 'Shadcn Admin',
-      logo: Command,
-      plan: 'Vite + ShadcnUI',
+      name: 'BUDGET 1',
+      logo: IconMoneybag,
+      plan: 'Vince & Lotta',
     },
     {
       name: 'Acme Inc',

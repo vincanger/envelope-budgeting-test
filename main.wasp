@@ -88,11 +88,6 @@ page Settings {
 //   component: import { HelpCenter } from "@src/features/help-center/index"
 // }
 
-route DashboardRoute { path: "/", to: Dashboard }
-page Dashboard {
-  // authRequired: true,
-  component: import Dashboard from "@src/features/dashboard/index"
-}
 
 route EnvelopesRoute { path: "/envelopes", to: EnvelopesPage }
 page EnvelopesPage {
@@ -295,4 +290,23 @@ page SettingsMembersPage {
   authRequired: true,
   component: import { MembersPage } from "@src/features/settings/MembersPage.tsx",
 }
+//#endregion
+
+//#region Dashboard
+route DashboardRoute { path: "/", to: Dashboard }
+page Dashboard {
+  // authRequired: true,
+  component: import Dashboard from "@src/features/dashboard/index"
+}
+
+query getIncomeExpenseSummary {
+  fn: import { getIncomeExpenseSummary } from "@src/features/dashboard/operations",
+  entities: [Transaction, BudgetProfile, UserBudgetProfile]
+}
+
+query getSpendingByEnvelope {
+  fn: import { getSpendingByEnvelope } from "@src/features/dashboard/operations",
+  entities: [Transaction, Envelope, BudgetProfile, UserBudgetProfile] 
+}
+
 //#endregion

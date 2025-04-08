@@ -239,68 +239,56 @@ type BulkImportResult = {
 }
 
 export const bulkImportTransactions: BulkImportTransactions<BulkImportInput, BulkImportResult> = async (args, context) => {
-  if (!context.user) { throw new HttpError(401); }
-  const { transactions } = args; // Removed targetEnvelopeId
+  if (!context.user) {
+    throw new HttpError(401, 'User not authenticated');
+  }
   const budgetProfileId = await getCurrentBudgetProfileId(context);
-  // Ensure user permission (MEMBER+)
+
+  // Ensure user has permission (MEMBER+)
   await ensureUserRole(context, budgetProfileId, ['MEMBER', 'ADMIN', 'OWNER']);
 
-  // Removed targetEnvelope check
-  
-  let successCount = 0;
-  let errorCount = 0;
-  const errors: string[] = [];
-  // Removed isArchived and createdById from Omit
-  const transactionsToCreate: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt' | 'envelopeId'>[] = [];
-  // Removed totalSpentAdjustment
+  const results: BulkImportResult = { successCount: 0, errorCount: 0, errors: [] };
 
-  if (!transactions || transactions.length === 0) {
-    return { successCount: 0, errorCount: 0, errors: ['No valid transactions received.'] };
+  // Process each transaction individually within a loop
+  for (const txData of args.transactions) {
+    try {
+      // NEW LOGIC: Determine type and adjust amount
+      const originalAmount = txData.amount; // Amount parsed on client (could be negative)
+      const finalAmount = Math.abs(originalAmount); // Store positive amount
+      // Determine type based on original sign. If it was 0, default to EXPENSE or throw error?
+      // Let's assume client validation prevents zero amounts, default to EXPENSE if somehow 0.
+      const finalType = originalAmount < 0 ? TransactionType.EXPENSE : 
+                        originalAmount > 0 ? TransactionType.INCOME :
+                        TransactionType.EXPENSE; // Default for 0, though should be caught by validation
+      
+      // Validate final amount (optional server-side check)
+      if (finalAmount === 0) {
+          throw new Error('Transaction amount cannot be zero.');
+      }
+
+      await context.entities.Transaction.create({
+        data: {
+          description: txData.description,
+          amount: finalAmount, // Use the absolute value
+          date: txData.date,
+          type: finalType,    // Use the determined type
+          // envelopeId: null, // Envelope is not assigned during bulk import
+          budgetProfile: { connect: { id: budgetProfileId } },
+          // createdBy: { connect: { id: context.user.id } } // Removed
+        },
+      });
+      results.successCount++;
+    } catch (error: any) {
+      results.errorCount++;
+      const errorMsg = `Failed to import row (Description: ${txData.description}): ${error.message || 'Unknown error'}`;
+      console.error(errorMsg, error); // Log full error on server
+      results.errors.push(errorMsg);
+    }
   }
 
-  for (const txData of transactions) {
-     // Server-side validation
-     if (!txData.description || !txData.amount || isNaN(txData.amount) || txData.amount === 0 || !(txData.date instanceof Date) || isNaN(txData.date.getTime()) || !Object.values(TransactionType).includes(txData.type)) {
-        errors.push(`Skipping invalid transaction data: ${JSON.stringify(txData)}`);
-        errorCount++;
-        continue; // Skip to next transaction
-     }
+  // Note: This implementation does NOT update Envelope spent amounts.
+  // Doing so requires fetching each envelope and updating, which can be slow for large imports.
+  // A separate job or manual recalc might be better for updating envelope aggregates after bulk import.
 
-     transactionsToCreate.push({
-        description: txData.description,
-        amount: txData.amount,
-        date: txData.date,
-        type: txData.type,
-        budgetProfileId: budgetProfileId,
-        // envelopeId is omitted, will be null by default
-     });
-  }
-
-  if (transactionsToCreate.length === 0) {
-    return { successCount: 0, errorCount: errorCount, errors: [...errors, 'No valid transactions to import after validation.'] };
-  }
-
-  try {
-    // Use createMany for efficiency
-    const result = await context.entities.Transaction.createMany({
-      data: transactionsToCreate,
-      skipDuplicates: true, // Optional: skip if a unique constraint violation occurs (though we don't have one defined here)
-    });
-    successCount = result.count;
-    errorCount += transactions.length - transactionsToCreate.length; // Add initial validation errors
-
-    // Removed envelope update logic
-
-  } catch (dbError: any) {
-    console.error("Database error during bulk import:", dbError);
-    errors.push(`Database error during import: ${dbError.message || 'Unknown error'}`);
-    errorCount = transactions.length; // Assume all failed if DB error occurs during createMany
-    successCount = 0;
-  }
-
-  return {
-    successCount,
-    errorCount,
-    errors,
-  };
+  return results;
 } 

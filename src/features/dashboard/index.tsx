@@ -22,6 +22,9 @@ import { Search } from '../../components/search';
 import { ThemeSwitch } from '../../components/theme-switch';
 import { DollarSign, ListChecks, PiggyBank, Wallet } from 'lucide-react';
 
+// Import the NEW chart component
+import { SpendingPieChart } from './components/SpendingPieChart';
+
 const formatCurrency = (value: number) => {
   return `$${value.toFixed(2)}`;
 };
@@ -149,6 +152,19 @@ export default function Dashboard() {
                       ))}
                     </div>
                   )}
+                </CardContent>
+              </Card>
+
+              {/* Replace the Overview chart with the SpendingPieChart */}
+              <Card className='col-span-1 lg:col-span-7'>
+                <CardHeader>
+                  <CardTitle>Spending by Envelope (Current Month)</CardTitle>
+                  <CardDescription>
+                    Where your money went this month.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pl-2">
+                  <SpendingPieChart /> 
                 </CardContent>
               </Card>
             </div>

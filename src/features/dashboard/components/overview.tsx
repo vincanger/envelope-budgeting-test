@@ -1,60 +1,16 @@
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts'
-
-const data = [
-  {
-    name: 'Jan',
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-  {
-    name: 'Feb',
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-  {
-    name: 'Mar',
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-  {
-    name: 'Apr',
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-  {
-    name: 'May',
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-  {
-    name: 'Jun',
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-  {
-    name: 'Jul',
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-  {
-    name: 'Aug',
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-  {
-    name: 'Sep',
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-  {
-    name: 'Oct',
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-  {
-    name: 'Nov',
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-  {
-    name: 'Dec',
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-]
+import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from 'recharts'
+import { useQuery, getIncomeExpenseSummary } from 'wasp/client/operations'
 
 export function Overview() {
+  const { data: monthlySummary, isLoading, error } = useQuery(getIncomeExpenseSummary);
+
+  if (isLoading) return <div>Loading chart data...</div>;
+  if (error) return <div>Error loading chart data: {error.message}</div>;
+  if (!monthlySummary || monthlySummary.length === 0) return <div>No transaction data available for the chart.</div>;
+
   return (
     <ResponsiveContainer width='100%' height={350}>
-      <BarChart data={data}>
+      <BarChart data={monthlySummary}>
         <XAxis
           dataKey='name'
           stroke='#888888'
@@ -69,11 +25,22 @@ export function Overview() {
           axisLine={false}
           tickFormatter={(value) => `$${value}`}
         />
+        <Tooltip
+          contentStyle={{ background: '#fff', border: '1px solid #ccc', borderRadius: '4px' }}
+          formatter={(value, name) => [`$${Number(value).toFixed(2)}`, name]}
+        />
+        <Legend wrapperStyle={{ paddingTop: '20px' }} />
         <Bar
-          dataKey='total'
-          fill='currentColor'
+          dataKey='income'
+          fill='#4ade80'
           radius={[4, 4, 0, 0]}
-          className='fill-primary'
+          name="Income"
+        />
+        <Bar
+          dataKey='expense'
+          fill='#f87171'
+          radius={[4, 4, 0, 0]}
+          name="Expense"
         />
       </BarChart>
     </ResponsiveContainer>

@@ -12,7 +12,7 @@ import { Label } from '../../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table';
 import { Checkbox } from '../../../components/ui/checkbox'; // Import Checkbox
-import { format } from 'date-fns';
+import { format, parse, isValid } from 'date-fns';
 import { cn } from '../../../lib/client/utils';
 import { AlertCircle, CheckCircle2 } from 'lucide-react'; // Icons for status
 
@@ -45,6 +45,10 @@ type HeaderMapping = {
 // Type for number format selection
 type NumberFormat = 'usd' | 'eur';
 
+// Define supported date formats
+type DateFormat = 'dd/MM/yyyy' | 'dd.MM.yyyy' | 'MM/dd/yyyy' | 'yyyy-MM-dd';
+const dateFormats: DateFormat[] = ['dd/MM/yyyy', 'dd.MM.yyyy', 'MM/dd/yyyy', 'yyyy-MM-dd'];
+
 // Helper to find likely header matches (case-insensitive)
 const findHeaderMatch = (headers: string[], keywords: string[]): string => {
     const lowerKeywords = keywords.map(k => k.toLowerCase());
@@ -69,15 +73,30 @@ export function BulkImportPage() {
   const [showPreview, setShowPreview] = useState(false);
   // Add state for number format
   const [numberFormat, setNumberFormat] = useState<NumberFormat>('eur'); // Default to Euro format
+  // Add state for selected date format
+  const [dateFormat, setDateFormat] = useState<DateFormat>('dd/MM/yyyy'); // Default to common EU format
+
+  // NEW: Helper function to parse date string based on selected format
+  const parseDateString = useCallback((dateStr: string): Date | null => {
+    if (!dateStr) return null;
+    try {
+      const parsedDate = parse(dateStr, dateFormat, new Date());
+      return isValid(parsedDate) ? parsedDate : null;
+    } catch (e) {
+      console.error('Error parsing date:', e);
+      return null;
+    }
+  }, [dateFormat]); // Depends on the selected dateFormat
 
   // Function to validate a single row after parsing/editing
   const validateRow = useCallback((row: Pick<ParsedRowData, 'Date' | 'Description' | 'Amount'>): string | undefined => {
     if (!row.Date || !row.Description || !row.Amount) {
       return 'Missing required fields.';
     }
-    const date = new Date(row.Date);
-    if (isNaN(date.getTime())) {
-      return 'Invalid Date format.';
+    // Use the robust parsing function
+    const date = parseDateString(row.Date); 
+    if (!date) { // Check if parsing was successful
+      return `Invalid Date for format ${dateFormat}.`; // Informative error
     }
     // Conditional amount normalization based on selected format
     let normalizedAmountString: string;
@@ -95,7 +114,7 @@ export function BulkImportPage() {
       return 'Amount cannot be zero.';
     }
     return undefined; // No error
-  }, [numberFormat]); // Add numberFormat to dependency array
+  }, [numberFormat, dateFormat, parseDateString]); // Add dateFormat and parseDateString to dependencies
 
   const resetState = () => {
       setImportResult(null);
@@ -107,6 +126,7 @@ export function BulkImportPage() {
       setShowMapping(false);
       setShowPreview(false);
       setNumberFormat('eur'); // Reset to default
+      setDateFormat('dd/MM/yyyy'); // Reset to default
   }
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -195,22 +215,23 @@ export function BulkImportPage() {
               Description: rawRow[headerMappings.Description] || '',
               Amount: rawRow[headerMappings.Amount] || '',
           };
-          // Log the raw amount string being processed
+          console.log(`Row ${index + 2} Raw Date String:`, JSON.stringify(rowData.Date)); // Keep logging raw date
           console.log(`Row ${index + 2} Raw Amount String:`, JSON.stringify(rowData.Amount));
 
-          const validationError = validateRow(rowData);
+          // Validation now uses the correct dateFormat via validateRow dependency
+          const validationError = validateRow(rowData); 
           return {
               id: index,
-              originalIndex: index + 2, // +1 for header, +1 for 0-index
+              originalIndex: index + 2,
               ...rowData,
-              isSelected: !validationError, // Pre-select only valid rows
+              isSelected: !validationError,
               validationError,
           };
       });
 
       setParsedData(processed);
-      setShowPreview(true); // Show the preview table
-  }, [rawParsedCsvData, headerMappings, validateRow]);
+      setShowPreview(true);
+  }, [rawParsedCsvData, headerMappings, validateRow]); // validateRow dependency ensures correct date format is used
 
   // Handle individual row selection
   const handleRowSelectionChange = (id: number, checked: boolean) => {
@@ -256,33 +277,54 @@ export function BulkImportPage() {
     setIsImporting(true);
     setImportResult(null);
 
-    // Prepare data using the enum
-    const transactionsToImport: TransactionImportDataClient[] = validSelectedRows.map(row => {
-      // Normalize amount string here too, based on selected format
+    const transactionsToImport: TransactionImportDataClient[] = [];
+    const errorsProcessing: string[] = [];
+
+    validSelectedRows.forEach(row => {
+      // Use the robust parsing function HERE before sending to backend
+      const parsedDate = parseDateString(row.Date);
+      if (!parsedDate) {
+        errorsProcessing.push(`Row ${row.originalIndex}: Could not parse date '${row.Date}' with format ${dateFormat}. Skipped.`);
+        return; // Skip this row
+      }
+
+      // Amount normalization (existing logic)
       let normalizedAmountString: string;
       if (numberFormat === 'eur') {
          normalizedAmountString = row.Amount.replace(/\./g, '').replace(',', '.');
       } else {
          normalizedAmountString = row.Amount.replace(/,/g, '');
       }
-      const parsedAmount = parseFloat(normalizedAmountString); // Use normalized string
-
-      return {
-        description: row.Description,
-        amount: parsedAmount,
-        date: new Date(row.Date),
-        type: parsedAmount < 0 ? TransactionType.EXPENSE : TransactionType.INCOME,
+      const parsedAmount = parseFloat(normalizedAmountString);
+      // Basic check, refined validation is in validateRow
+      if (isNaN(parsedAmount)) { 
+          errorsProcessing.push(`Row ${row.originalIndex}: Invalid amount '${row.Amount}'. Skipped.`);
+          return; 
       }
+
+      transactionsToImport.push({
+        description: row.Description,
+        amount: parsedAmount, // Amount is already handled by backend now
+        date: parsedDate,      // Use the correctly parsed date object
+        // Type is determined by backend based on amount sign
+        type: parsedAmount < 0 ? TransactionType.EXPENSE : TransactionType.INCOME,
+      });
     });
 
+    if (transactionsToImport.length === 0) {
+        setImportResult({ successCount: 0, errorCount: selectedRows.length, errors: [...errorsProcessing, 'No valid rows to import after final parsing.'] });
+        setIsImporting(false);
+        return;
+    }
+
     try {
-      // Action input type now matches the backend expectation
       const result = await bulkImportAction({
         transactions: transactionsToImport,
       });
-      setImportResult(result);
+      // Combine processing errors with import errors
+      setImportResult({ ...result, errors: [...errorsProcessing, ...result.errors] });
     } catch (error: any) {
-      setImportResult({ successCount: 0, errorCount: transactionsToImport.length, errors: [error?.message || 'Unexpected error during import.'], });
+      setImportResult({ successCount: 0, errorCount: transactionsToImport.length + errorsProcessing.length, errors: [...errorsProcessing, error?.message || 'Unexpected error during import.'], });
     } finally {
       setIsImporting(false);
     }
@@ -314,6 +356,34 @@ export function BulkImportPage() {
           {fileError && <p className='mt-1 text-sm text-red-600'>{fileError}</p>}
         </div>
 
+        {/* ADD Date Format Selector */}
+        <div>
+          <Label htmlFor='dateFormat' className='block text-sm font-medium text-gray-700 mb-1'>
+            Date Format in File
+          </Label>
+          <Select
+            value={dateFormat}
+            onValueChange={(value: DateFormat) => {
+               setDateFormat(value);
+               // Re-process data if preview is shown, as validation changes
+               if (showPreview) {
+                   processDataWithMappings();
+               }
+            }}
+            disabled={isImporting}
+          >
+            <SelectTrigger id='dateFormat' className="w-full">
+              <SelectValue placeholder="Select date format..." />
+            </SelectTrigger>
+            <SelectContent>
+               {dateFormats.map(format => (
+                 <SelectItem key={format} value={format}>{format}</SelectItem>
+               ))}
+            </SelectContent>
+          </Select>
+          <p className='mt-1 text-xs text-gray-500'>Select the format used in your file's date column.</p>
+        </div>
+
         {/* Number Format Selector */}
         <div>
           <Label htmlFor='numberFormat' className='block text-sm font-medium text-gray-700 mb-1'>
@@ -321,7 +391,13 @@ export function BulkImportPage() {
           </Label>
           <Select
             value={numberFormat}
-            onValueChange={(value: NumberFormat) => setNumberFormat(value)}
+            onValueChange={(value: NumberFormat) => {
+                setNumberFormat(value);
+                 // Re-process data if preview is shown, as validation changes
+                if (showPreview) {
+                    processDataWithMappings();
+                }
+            }}
             disabled={isImporting}
           >
             <SelectTrigger id='numberFormat' className="w-full">
