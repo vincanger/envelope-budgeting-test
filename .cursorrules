@@ -232,6 +232,9 @@ This is a Wasp full-stack web application project. Always consider the following
   - Examples to avoid ❌:
     - `component: import { LoginPage } from "@client/pages/auth/LoginPage.tsx"`
 - In the client's root component, use the Outlet component rather than children
+- **Prisma Enum Value Imports**: When you need to use Prisma enum members as *values* (e.g., `MyEnum.VALUE` in logic or comparisons) in your server or client code, import the enum directly from `@prisma/client`, not from `wasp/entities`.
+  - Example ✅: `import { TransactionType } from '@prisma/client';` (Used as `TransactionType.EXPENSE`)
+  - Example ❌: `import { TransactionType } from 'wasp/entities';` (This only imports the type for annotations, not the value)
 - Common import errors:
   - "Cannot find module 'wasp/...'": Check that you're using 'wasp/' not '@wasp/'
   - "Cannot find module '@src/...'": In .ts files, use relative imports, not '@src'

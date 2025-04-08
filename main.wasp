@@ -42,6 +42,9 @@ app envelopeBudgeter {
     rootComponent: import Main from "@src/main",
     setupFn: import QuerySetup from "@src/config/querySetup",
   },
+  server: {
+    middlewareConfigFn: import { serverMiddlewareFn } from "@src/server/serverSetup",
+  },
 }
 
 route SignupRoute { path: "/sign-up", to: Signup }
@@ -252,24 +255,36 @@ action deleteEnvelope {
 
 //#region Transactions
 
+route BulkImportRoute { path: "/transactions/import", to: BulkImportPage }
+page BulkImportPage {
+  authRequired: true,
+  component: import { BulkImportPage } from "@src/features/transactions/pages/BulkImportPage.tsx"
+}
+
 query getTransactions {
   fn: import { getTransactions } from "@src/features/transactions/operations.ts",
-  entities: [Transaction, BudgetProfile, UserBudgetProfile] // Need BudgetProfile for auth check
+  entities: [Transaction, Envelope, BudgetProfile, UserBudgetProfile]
 }
 
 action createTransaction {
   fn: import { createTransaction } from "@src/features/transactions/operations.ts",
-  entities: [Transaction, BudgetProfile, UserBudgetProfile, Envelope, User] // Need all for linking/checks
+  entities: [Transaction, Envelope, BudgetProfile, UserBudgetProfile]
 }
 
 action updateTransaction {
   fn: import { updateTransaction } from "@src/features/transactions/operations.ts",
-  entities: [Transaction, BudgetProfile, UserBudgetProfile, Envelope] // Need all for checks
+  entities: [Transaction, Envelope, BudgetProfile, UserBudgetProfile]
 }
 
 action deleteTransaction {
   fn: import { deleteTransaction } from "@src/features/transactions/operations.ts",
-  entities: [Transaction, BudgetProfile, UserBudgetProfile, Envelope] // Added Envelope
+  entities: [Transaction, Envelope, BudgetProfile, UserBudgetProfile]
+}
+
+// Reverted to standard definition - Wasp infers types from the function signature
+action bulkImportTransactions {
+  fn: import { bulkImportTransactions } from "@src/features/transactions/operations.ts",
+  entities: [Transaction, Envelope, BudgetProfile, UserBudgetProfile]
 }
 
 //#endregion

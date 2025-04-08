@@ -26,7 +26,6 @@ model User {
   budgetProfile   BudgetProfile? @relation("OwnedProfile")
   memberProfiles  UserBudgetProfile[]
   // notifications   Notification[] // Deferred to later phase
-  transactions    Transaction[]    @relation("CreatedTransactions")
   sentInvitations     Invitation[] @relation("SentInvitations")
   acceptedInvitations Invitation[] @relation("AcceptedInvitations")
 }
@@ -81,27 +80,32 @@ model Envelope {
   @@index([budgetProfileId])
 }
 
+// Define the enum for transaction types
+enum TransactionType {
+  EXPENSE
+  INCOME
+  TRANSFER // Keep TRANSFER even if not fully used yet
+}
+
 model Transaction {
   id              Int           @id @default(autoincrement())
   description     String
   amount          Float
   date            DateTime
-  envelope        Envelope      @relation(fields: [envelopeId], references: [id], onDelete: Restrict)
-  envelopeId      Int
+  type            TransactionType // INCOME or EXPENSE
+
+  // Relationships
   budgetProfile   BudgetProfile @relation(fields: [budgetProfileId], references: [id], onDelete: Cascade)
   budgetProfileId Int
-  createdBy       User          @relation("CreatedTransactions", fields: [createdById], references: [id])
-  createdById     Int
-  type            String        // EXPENSE, INCOME, TRANSFER
-  recurring       Boolean       @default(false)
-  recurringRule   String?       // For recurring transactions
-  isArchived      Boolean       @default(false)
+
+  envelope        Envelope?     @relation(fields: [envelopeId], references: [id], onDelete: SetNull) // Made optional, SetNull on delete
+  envelopeId      Int?          // Made optional
+
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  @@index([envelopeId])
   @@index([budgetProfileId])
-  @@index([createdById])
+  @@index([envelopeId])
 }
 
 enum InvitationStatus {

@@ -38,19 +38,19 @@ This plan outlines the implementation of the envelope budgeting app using a modi
 ### 2.1 Envelope Management
 - [x] Implement envelope CRUD operations
 - [x] Add envelope categorization (Basic)
-- [ ] Create envelope templates
+- [ ] Create envelope templates (Deferred)
 - [x] Implement envelope archiving (Basic)
 
 ### 2.2 Transaction Basics
 - [x] Add basic transaction CRUD
 - [x] Implement transaction categorization (via Envelope)
 - [x] Create transaction history view (Basic)
-- [ ] Add basic transaction search
+- [ ] Add basic transaction search (Deferred)
 
 ### 2.3 Budget Calculations
 - [x] Implement envelope balance tracking
 - [x] Add basic budget vs. actual calculations (Basic display)
-- [ ] Create simple spending analytics
+- [ ] Create simple spending analytics (Deferred)
 - [x] Implement basic data validation
 
 ### 2.4 Enhanced UI
@@ -85,7 +85,7 @@ This plan outlines the implementation of the envelope budgeting app using a modi
 ### 4.1 Transaction Types
 - Add recurring transactions
 - Implement transaction transfers
-- Create bulk transaction import
+- [x] Create bulk transaction import
 - Add transaction scheduling
 
 ### 4.2 Enhanced Envelopes

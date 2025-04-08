@@ -1,7 +1,16 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from 'wasp/client/operations';
-import { getTransactions, createTransaction, getEnvelopes, getCurrentUserProfile } from 'wasp/client/operations';
-import { type Transaction, type Envelope } from 'wasp/entities';
+import {
+  getTransactions,
+  createTransaction,
+  getEnvelopes,
+  getCurrentUserProfile,
+  updateTransaction
+} from 'wasp/client/operations';
+import type { Transaction, Envelope } from 'wasp/entities';
+// Import enum from @prisma/client
+import { TransactionType } from '@prisma/client'; 
+import { Link } from 'wasp/client/router';
 // Assuming shadcn components are available via relative paths
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -11,7 +20,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
 import { Calendar } from '../../components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover';
-import { CalendarIcon, PlusCircle } from 'lucide-react';
+import { CalendarIcon, PlusCircle, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '../../lib/client/utils';
 import { DayPicker } from 'react-day-picker';
@@ -36,12 +45,20 @@ export function TransactionsPage() {
   const [amount, setAmount] = useState('0');
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [selectedEnvelopeId, setSelectedEnvelopeId] = useState<string>('');
-  const [transactionType, setTransactionType] = useState<'EXPENSE' | 'INCOME' | 'TRANSFER'>('EXPENSE');
+  // Use the enum for state type and initial value
+  const [transactionType, setTransactionType] = useState<TransactionType>(TransactionType.EXPENSE); 
   const [isCreateLoading, setIsCreateLoading] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
+  // State for inline editing
+  const [editingRowId, setEditingRowId] = useState<number | null>(null);
+  const [editingEnvelopeId, setEditingEnvelopeId] = useState<string | null>(null); // Store as string for Select compatibility
+  const [isSavingEnvelope, setIsSavingEnvelope] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
   // Determine if user can create transactions (MEMBER, ADMIN, or OWNER)
-  const canCreate = userProfile && ['MEMBER', 'ADMIN', 'OWNER'].includes(userProfile.role);
+  const canModify = userProfile && ['MEMBER', 'ADMIN', 'OWNER'].includes(userProfile.role);
+  const hasEnvelopes = envelopes && envelopes.length > 0;
 
   const handleCreateTransaction = async () => {
     setCreateError(null);
@@ -54,14 +71,15 @@ export function TransactionsPage() {
       if (isNaN(numericAmount)) throw new Error('Invalid amount.');
       if (isNaN(envelopeId)) throw new Error('Please select an envelope.');
       if (!date) throw new Error('Please select a date.');
-      if (transactionType === 'TRANSFER') throw new Error('Transfer type not handled here yet.');
+      // Compare using enum
+      if (transactionType === TransactionType.TRANSFER) throw new Error('Transfer type not handled here yet.'); 
 
       await createTransaction({
         description,
         amount: numericAmount,
         date: date,
         envelopeId: envelopeId,
-        type: transactionType
+        type: transactionType // Pass enum value directly
       });
 
       // Reset form and close dialog
@@ -69,9 +87,8 @@ export function TransactionsPage() {
       setAmount('0');
       setDate(new Date());
       setSelectedEnvelopeId('');
-      setTransactionType('EXPENSE');
+      setTransactionType(TransactionType.EXPENSE); // Reset to enum default
       setIsAddDialogOpen(false);
-      resetAddForm();
     } catch (err) {
       if (err instanceof Error) {
         setCreateError(err.message);
@@ -90,8 +107,52 @@ export function TransactionsPage() {
       setAmount('0');
       setDate(new Date());
       setSelectedEnvelopeId('');
-      setTransactionType('EXPENSE');
+      setTransactionType(TransactionType.EXPENSE); // Use enum here too
   }
+
+  // --- Inline Editing Handlers ---
+
+  const handleEditClick = (transaction: Transaction) => {
+    setEditingRowId(transaction.id);
+    setEditingEnvelopeId(transaction.envelopeId ? String(transaction.envelopeId) : null);
+    setEditError(null); // Clear previous edit errors
+  };
+
+  const handleCancelEdit = () => {
+    setEditingRowId(null);
+    setEditingEnvelopeId(null);
+    setEditError(null);
+  };
+
+  const handleSaveEnvelope = async () => {
+    if (editingRowId === null) return;
+    setEditError(null);
+    setIsSavingEnvelope(true);
+
+    try {
+      // Convert string | null to number | null
+      const newEnvelopeId = editingEnvelopeId === null || editingEnvelopeId === '' ? null : parseInt(editingEnvelopeId, 10);
+      
+      if (editingEnvelopeId !== null && editingEnvelopeId !== '' && isNaN(newEnvelopeId as number)) {
+        throw new Error("Invalid envelope selected.");
+      }
+
+      // Call updateTransaction directly
+      await updateTransaction({
+        id: editingRowId,
+        envelopeId: newEnvelopeId
+      });
+
+      handleCancelEdit(); // Exit edit mode on success
+    } catch (err: any) {
+      console.error("Error updating envelope:", err);
+      setEditError(err.message || "Failed to update envelope.");
+    } finally {
+      setIsSavingEnvelope(false);
+    }
+  };
+
+  // --- End Inline Editing Handlers ---
 
   // Separate loading and error handling
   if (isLoadingTransactions || isLoadingEnvelopes || isLoadingProfile) return 'Loading...'
@@ -113,14 +174,24 @@ export function TransactionsPage() {
     <div className="p-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold">Transactions</h1>
-        {/* Conditionally disable button based on role, loading, and existence of envelopes */}
-        <Button 
-            onClick={() => setIsAddDialogOpen(true)} 
-            disabled={isLoadingProfile || !canCreate || !envelopes || envelopes.length === 0} 
-            title={!canCreate ? 'Insufficient permissions' : (!envelopes || envelopes.length === 0) ? 'Create an envelope first' : ''}
-        >
-          <PlusCircle className="mr-2 h-4 w-4" /> Add Transaction
-        </Button>
+        <div className="flex space-x-2">
+          <Link to="/transactions/import">
+            <Button
+              variant="outline"
+              disabled={isLoadingProfile || !canModify || !hasEnvelopes}
+              title={!canModify ? 'Insufficient permissions' : !hasEnvelopes ? 'Create an envelope first' : 'Import transactions from CSV'}
+            >
+              <Upload className="mr-2 h-4 w-4" /> Import
+            </Button>
+          </Link>
+          <Button 
+              onClick={() => setIsAddDialogOpen(true)} 
+              disabled={isLoadingProfile || !canModify || !hasEnvelopes} 
+              title={!canModify ? 'Insufficient permissions' : !hasEnvelopes ? 'Create an envelope first' : 'Add a new transaction'}
+          >
+            <PlusCircle className="mr-2 h-4 w-4" /> Add Transaction
+          </Button>
+        </div>
       </div>
 
       {/* Add Transaction Dialog */} 
@@ -185,14 +256,18 @@ export function TransactionsPage() {
             {/* Type */}
             <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="type" className="text-right">Type</Label>
-                <Select value={transactionType} onValueChange={(value: 'EXPENSE' | 'INCOME') => setTransactionType(value)}>
+                <Select 
+                  value={transactionType} 
+                  onValueChange={(value: string) => setTransactionType(value as TransactionType)}
+                >
                     <SelectTrigger className="col-span-3">
                         <SelectValue placeholder="Select type..." />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="EXPENSE">Expense</SelectItem>
-                        <SelectItem value="INCOME">Income</SelectItem>
-                        {/* <SelectItem value="TRANSFER">Transfer</SelectItem> */}
+                        <SelectItem value={TransactionType.EXPENSE}>Expense</SelectItem>
+                        <SelectItem value={TransactionType.INCOME}>Income</SelectItem>
+                        {/* Keep TRANSFER commented out or add if needed */}
+                        {/* <SelectItem value={TransactionType.TRANSFER}>Transfer</SelectItem> */}
                     </SelectContent>
                 </Select>
             </div>
@@ -229,23 +304,77 @@ export function TransactionsPage() {
               <TableRow><TableCell colSpan={6} className="text-red-500">Error loading transactions: {(errorTransactions as Error)?.message ?? 'Unknown error'}</TableCell></TableRow>
             )}
             {transactions && transactions.length === 0 && <TableRow><TableCell colSpan={6}>No transactions recorded yet.</TableCell></TableRow>}
-            {transactions?.map((tx) => (
-              <TableRow key={tx.id}>
+            {transactions?.map((tx) => {
+              const isEditing = editingRowId === tx.id;
+              return (
+              <TableRow key={tx.id} data-state={isEditing ? 'selected' : ''}>
                 <TableCell>{formatDate(tx.date)}</TableCell>
                 <TableCell>{tx.description}</TableCell>
-                {/* Find envelope name - might be slow for large lists, consider joining in query later */}
-                <TableCell>{envelopes?.find(env => env.id === tx.envelopeId)?.name || 'N/A'}</TableCell>
+                {/* Envelope Cell - Conditionally render Select or Text */}
+                <TableCell>
+                  {isEditing ? (
+                    <Select
+                      value={editingEnvelopeId ?? ''} // Use empty string for "None" or placeholder
+                      onValueChange={setEditingEnvelopeId}
+                      disabled={isSavingEnvelope}
+                    >
+                      <SelectTrigger className="h-8 text-sm w-[150px]">
+                        <SelectValue placeholder="Select Envelope..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {envelopes?.map((env) => (
+                          <SelectItem key={env.id} value={String(env.id)}>{env.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    // Display envelope name or 'Unassigned'
+                    envelopes?.find(env => env.id === tx.envelopeId)?.name || <span className="text-gray-500 italic">Unassigned</span>
+                  )}
+                </TableCell>
                 <TableCell>{tx.type}</TableCell>
                 <TableCell className="text-right">${tx.amount.toFixed(2)}</TableCell>
+                {/* Actions Cell - Conditionally render Edit or Save/Cancel */}
                 <TableCell className="text-right space-x-1">
-                    {/* TODO: Add Edit/Delete buttons */}
-                   <Button variant="outline" size="sm" disabled>Edit</Button>
-                   <Button variant="destructive" size="sm" disabled>Delete</Button>
+                    {isEditing ? (
+                      <>
+                        <Button 
+                          variant="default" 
+                          size="sm" 
+                          onClick={handleSaveEnvelope} 
+                          disabled={isSavingEnvelope}
+                        >
+                          {isSavingEnvelope ? 'Saving...' : 'Save'}
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={handleCancelEdit}
+                          disabled={isSavingEnvelope}
+                        >
+                          Cancel
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleEditClick(tx)}
+                          disabled={!canModify || editingRowId !== null} // Disable if another row is being edited
+                          title={!canModify ? 'Insufficient permissions' : editingRowId !== null ? 'Finish editing other row first' : 'Edit envelope'}
+                        >
+                          Edit
+                        </Button>
+                        <Button variant="destructive" size="sm" disabled>Delete</Button> {/* Keep Delete disabled for now */}
+                      </>
+                    )}
                 </TableCell>
               </TableRow>
-            ))}
+            )})}
           </TableBody>
         </Table>
+        {editError && <p className="text-red-500 text-sm px-6 py-2">Error: {editError}</p>} {/* Display edit error */}
       </div>
     </div>
   );
