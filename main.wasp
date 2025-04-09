@@ -26,7 +26,7 @@ app envelopeBudgeter {
         userSignupFields: import { getEmailUserFields } from "@src/features/auth/userSignupFields.ts"
       },
     },
-    onAuthFailedRedirectTo: "/sign-in",
+    onAuthFailedRedirectTo: "/login",
     onAuthSucceededRedirectTo: "/",
     onBeforeSignup: import { onBeforeSignup } from "@src/features/auth/authHooks.ts",
     onAfterSignup: import { updateInvitationStatus } from "@src/features/auth/authHooks.ts",
