@@ -7,6 +7,8 @@ A full-stack envelope budgeting application vibe-coded using
 
 This project serves as a demo for using Wasp with AI-assisted development tools like Cursor, Windsurf, Copilot, Claude Code, etc.
 
+![Envelope Budgeting App](./public/envelope-budgeting-app.png)
+
 ## Getting Started
 
 1. install Wasp
