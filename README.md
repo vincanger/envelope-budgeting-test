@@ -7,6 +7,32 @@ A full-stack envelope budgeting application vibe-coded using
 
 This project serves as a demo for using Wasp with AI-assisted development tools like Cursor, Windsurf, Copilot, Claude Code, etc.
 
+## Getting Started
+
+1. install Wasp
+
+```bash
+curl -sSL https://get.wasp.sh/installer.sh | sh
+```
+
+2. start a postgres database (you must have [docker installed](https://www.docker.com/get-started/))
+
+```bash
+wasp start db
+```
+
+3. migrate the database
+
+```bash
+wasp db migrate-dev
+```
+
+4. start the development server
+
+```bash
+wasp start
+```
+
 ## AI-Assisted Development
 
 This project leverages AI tools to streamline development through:
