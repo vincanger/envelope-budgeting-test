@@ -10,3 +10,6 @@ migrations/
 # Don't ignore example dotenv files.
 !.env.example
 !.env.*.example
+
+# macOS specific files
+.DS_Store
