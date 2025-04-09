@@ -1,6 +1,6 @@
 # Vibe-Coded Envelope Budgeting App
 
-A full-stack envelope budgeting application vibe-coded using
+A full-stack collaborativeenvelope budgeting application vibe-coded using
 - [Wasp](https://wasp.sh), a React, Node.js, and Prisma full-stack framework.
 - [Shadcn-Admin](https://github.com/satnaing/shadcn-admin) for the UI.
 - Cursor with Google Gemini 2.5 Pro for AI-assisted development.
