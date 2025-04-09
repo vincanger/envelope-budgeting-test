@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { IconCheck, IconMoon, IconSun } from '@tabler/icons-react'
-import { cn } from '../lib/client/utils'
+import { cn } from '../utils/cn'
 import { useTheme } from '../context/theme-context'
 import { Button } from './ui/button'
 import {

@@ -1,5 +1,5 @@
 import { IconSearch } from '@tabler/icons-react'
-import { cn } from '../lib/client/utils'
+import { cn } from '../utils/cn'
 import { useSearch } from '../context/search-context'
 import { Button } from './ui/button'
 

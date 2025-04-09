@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { cn } from '../lib/client/utils';
+import { cn } from '../utils/cn';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 

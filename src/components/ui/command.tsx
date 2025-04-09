@@ -3,7 +3,7 @@ import { type DialogProps } from '@radix-ui/react-dialog'
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 import { Command as CommandPrimitive } from 'cmdk'
 import { Search } from 'lucide-react'
-import { cn } from '../../lib/client/utils'
+import { cn } from '../../utils/cn'
 import {
   Dialog,
   DialogContent,

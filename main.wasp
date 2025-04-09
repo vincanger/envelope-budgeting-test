@@ -28,9 +28,10 @@ app envelopeBudgeter {
     },
     onAuthFailedRedirectTo: "/sign-in",
     onAuthSucceededRedirectTo: "/",
-    onBeforeSignup: import { onBeforeSignup } from "@src/server/authHooks.ts",
-    onAfterSignup: import { updateInvitationStatus } from "@src/server/authHooks.ts",
+    onBeforeSignup: import { onBeforeSignup } from "@src/features/auth/authHooks.ts",
+    onAfterSignup: import { updateInvitationStatus } from "@src/features/auth/authHooks.ts",
   },
+  // TODO: use production email sender. see: https://wasp.sh/docs/advanced/email#using-the-dummy-provider
   emailSender: {
     provider: Dummy,
     defaultFrom: {
@@ -43,18 +44,19 @@ app envelopeBudgeter {
     setupFn: import QuerySetup from "@src/config/querySetup",
   },
   server: {
-    middlewareConfigFn: import { serverMiddlewareFn } from "@src/server/serverSetup",
+    middlewareConfigFn: import { serverMiddlewareFn } from "@src/config/serverSetup",
   },
 }
 
+//#region Auth Routes
 route SignupRoute { path: "/sign-up", to: Signup }
 page Signup {
-  component: import { Signup } from "@src/features/auth/signup"
+  component: import { Signup } from "@src/features/auth/SignupPage"
 }
 
-route LoginRoute { path: "/sign-in", to: Login }
+route LoginRoute { path: "/login", to: Login }
 page Login {
-  component: import { Login } from "@src/features/auth/login"
+  component: import { Login } from "@src/features/auth/LoginPage"
 }
 
 route RequestPasswordResetRoute { path: "/request-password-reset", to: RequestPasswordResetPage }
@@ -71,15 +73,13 @@ route VerifyEmailRoute { path: "/verify-email", to: VerifyEmailPage }
 page VerifyEmailPage {
   component: import { VerifyEmailPage } from "@src/features/auth/VerifyEmailPage"
 }
+//#endregion
 
-route ChatsRoute { path: "/chats", to: Chats }
-page Chats {
-  component: import Chats from "@src/features/chats/index"
-}
+//#region Settings
 
 route SettingsRoute { path: "/settings/*", to: Settings }
 page Settings {
-  component: import Settings from "@src/features/settings/index"
+  component: import Settings from "@src/features/settings/SettingsPage"
 }
 
 // TODO: add route
@@ -88,68 +88,75 @@ page Settings {
 //   component: import { HelpCenter } from "@src/features/help-center/index"
 // }
 
-
+//#endregion
 route EnvelopesRoute { path: "/envelopes", to: EnvelopesPage }
 page EnvelopesPage {
   authRequired: true,
   component: import { EnvelopesPage } from "@src/features/envelopes/EnvelopesPage.tsx"
 }
 
+query getEnvelopes {
+  fn: import { getEnvelopes } from "@src/features/envelopes/operations.ts",
+  entities: [Envelope, BudgetProfile, UserBudgetProfile] // Need BudgetProfile to check ownership
+}
+
+action createEnvelope {
+  fn: import { createEnvelope } from "@src/features/envelopes/operations.ts",
+  entities: [Envelope, BudgetProfile, UserBudgetProfile] // Need BudgetProfile to link
+}
+
+action updateEnvelope {
+  fn: import { updateEnvelope } from "@src/features/envelopes/operations.ts",
+  entities: [Envelope, BudgetProfile, UserBudgetProfile] // Need BudgetProfile to check ownership
+}
+
+action deleteEnvelope {
+  fn: import { deleteEnvelope } from "@src/features/envelopes/operations.ts",
+  entities: [Envelope, BudgetProfile, UserBudgetProfile, Transaction] // Need Transaction to check count
+}
+
+//#endregion
+
+//#region Transactions
 route TransactionsRoute { path: "/transactions", to: TransactionsPage }
 page TransactionsPage {
   authRequired: true,
   component: import { TransactionsPage } from "@src/features/transactions/TransactionsPage.tsx"
 }
 
-route TasksRoute { path: "/tasks", to: Tasks }
-page Tasks {
-  component: import Tasks from "@src/features/tasks/index"
+route BulkImportRoute { path: "/transactions/import", to: BulkImportPage }
+page BulkImportPage {
+  authRequired: true,
+  component: import { BulkImportPage } from "@src/features/transactions/pages/BulkImportPage.tsx"
 }
 
-route AppsRoute { path: "/apps", to: Apps }
-page Apps {
-  component: import Apps from "@src/features/apps/index"
+query getTransactions {
+  fn: import { getTransactions } from "@src/features/transactions/operations.ts",
+  entities: [Transaction, Envelope, BudgetProfile, UserBudgetProfile]
 }
 
-route UsersRoute { path: "/users", to: Users }
-page Users {
-  component: import Users from "@src/features/users/index"
+action createTransaction {
+  fn: import { createTransaction } from "@src/features/transactions/operations.ts",
+  entities: [Transaction, Envelope, BudgetProfile, UserBudgetProfile]
 }
 
-//#region Error Routes
-route GeneralErrorRoute { path: "/500", to: GeneralError }
-page GeneralError {
-  component: import GeneralError from "@src/features/errors/general-error"
+action updateTransaction {
+  fn: import { updateTransaction } from "@src/features/transactions/operations.ts",
+  entities: [Transaction, Envelope, BudgetProfile, UserBudgetProfile]
 }
 
-route NotFoundRoute { path: "/404", to: NotFound }
-page NotFound {
-  component: import NotFound from "@src/features/errors/not-found-error"
+action deleteTransaction {
+  fn: import { deleteTransaction } from "@src/features/transactions/operations.ts",
+  entities: [Transaction, Envelope, BudgetProfile, UserBudgetProfile]
 }
 
-route ForbiddenRoute { path: "/403", to: Forbidden }
-page Forbidden {
-  component: import Forbidden from "@src/features/errors/forbidden"
-}
-
-route UnauthorizedRoute { path: "/401", to: Unauthorized }
-page Unauthorized {
-  component: import Unauthorized from "@src/features/errors/unauthorized-error"
-}
-
-route MaintenanceRoute { path: "/maintenance", to: Maintenance }
-page Maintenance {
-  component: import Maintenance from "@src/features/errors/maintenance-error"
+action bulkImportTransactions {
+  fn: import { bulkImportTransactions } from "@src/features/transactions/operations.ts",
+  entities: [Transaction, Envelope, BudgetProfile, UserBudgetProfile]
 }
 //#endregion
 
 //#region User Profile
-
-route UserProfileRoute { path: "/profile", to: UserProfilePage }
-page UserProfilePage {
-  authRequired: true,
-  component: import { UserProfilePage } from "@src/features/user/UserProfilePage.tsx"
-}
 
 action updateUserProfile {
   fn: import { updateUserProfile } from "@src/features/user/operations.ts",
@@ -224,79 +231,11 @@ query getUserBudgetProfiles {
 
 //#endregion
 
-//#region Envelopes
-
-query getEnvelopes {
-  fn: import { getEnvelopes } from "@src/features/envelopes/operations.ts",
-  entities: [Envelope, BudgetProfile, UserBudgetProfile] // Need BudgetProfile to check ownership
-}
-
-action createEnvelope {
-  fn: import { createEnvelope } from "@src/features/envelopes/operations.ts",
-  entities: [Envelope, BudgetProfile, UserBudgetProfile] // Need BudgetProfile to link
-}
-
-action updateEnvelope {
-  fn: import { updateEnvelope } from "@src/features/envelopes/operations.ts",
-  entities: [Envelope, BudgetProfile, UserBudgetProfile] // Need BudgetProfile to check ownership
-}
-
-action deleteEnvelope {
-  fn: import { deleteEnvelope } from "@src/features/envelopes/operations.ts",
-  entities: [Envelope, BudgetProfile, UserBudgetProfile, Transaction] // Need Transaction to check count
-}
-
-//#endregion
-
-//#region Transactions
-
-route BulkImportRoute { path: "/transactions/import", to: BulkImportPage }
-page BulkImportPage {
-  authRequired: true,
-  component: import { BulkImportPage } from "@src/features/transactions/pages/BulkImportPage.tsx"
-}
-
-query getTransactions {
-  fn: import { getTransactions } from "@src/features/transactions/operations.ts",
-  entities: [Transaction, Envelope, BudgetProfile, UserBudgetProfile]
-}
-
-action createTransaction {
-  fn: import { createTransaction } from "@src/features/transactions/operations.ts",
-  entities: [Transaction, Envelope, BudgetProfile, UserBudgetProfile]
-}
-
-action updateTransaction {
-  fn: import { updateTransaction } from "@src/features/transactions/operations.ts",
-  entities: [Transaction, Envelope, BudgetProfile, UserBudgetProfile]
-}
-
-action deleteTransaction {
-  fn: import { deleteTransaction } from "@src/features/transactions/operations.ts",
-  entities: [Transaction, Envelope, BudgetProfile, UserBudgetProfile]
-}
-
-// Reverted to standard definition - Wasp infers types from the function signature
-action bulkImportTransactions {
-  fn: import { bulkImportTransactions } from "@src/features/transactions/operations.ts",
-  entities: [Transaction, Envelope, BudgetProfile, UserBudgetProfile]
-}
-
-//#endregion
-
-//#region Settings
-route SettingsMembersRoute { path: "/settings/members", to: SettingsMembersPage }
-page SettingsMembersPage { 
-  authRequired: true,
-  component: import { MembersPage } from "@src/features/settings/MembersPage.tsx",
-}
-//#endregion
-
 //#region Dashboard
 route DashboardRoute { path: "/", to: Dashboard }
 page Dashboard {
-  // authRequired: true,
-  component: import Dashboard from "@src/features/dashboard/index"
+  authRequired: true,
+  component: import Dashboard from "@src/features/dashboard/DashboardHomePage"
 }
 
 query getIncomeExpenseSummary {
@@ -309,4 +248,32 @@ query getSpendingByEnvelope {
   entities: [Transaction, Envelope, BudgetProfile, UserBudgetProfile] 
 }
 
+//#endregion
+
+
+//#region Error Routes
+route GeneralErrorRoute { path: "/500", to: GeneralError }
+page GeneralError {
+  component: import GeneralError from "@src/features/errors/general-error"
+}
+
+route NotFoundRoute { path: "/404", to: NotFound }
+page NotFound {
+  component: import NotFound from "@src/features/errors/not-found-error"
+}
+
+route ForbiddenRoute { path: "/403", to: Forbidden }
+page Forbidden {
+  component: import Forbidden from "@src/features/errors/forbidden"
+}
+
+route UnauthorizedRoute { path: "/401", to: Unauthorized }
+page Unauthorized {
+  component: import Unauthorized from "@src/features/errors/unauthorized-error"
+}
+
+route MaintenanceRoute { path: "/maintenance", to: Maintenance }
+page Maintenance {
+  component: import Maintenance from "@src/features/errors/maintenance-error"
+}
 //#endregion

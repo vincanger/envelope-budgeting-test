@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link } from 'wasp/client/router';
 import { logout } from 'wasp/client/auth';
 import {
   BadgeCheck,
@@ -49,7 +49,7 @@ export function NavUser({
             >
               <Avatar className='h-8 w-8 rounded-lg'>
                 <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className='rounded-lg'>SN</AvatarFallback>
+                <AvatarFallback className='rounded-lg'>$$</AvatarFallback>
               </Avatar>
               <div className='grid flex-1 text-left text-sm leading-tight'>
                 <span className='truncate font-semibold'>{user.name}</span>
@@ -68,7 +68,7 @@ export function NavUser({
               <div className='flex items-center gap-2 px-1 py-1.5 text-left text-sm'>
                 <Avatar className='h-8 w-8 rounded-lg'>
                   <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className='rounded-lg'>SN</AvatarFallback>
+                  <AvatarFallback className='rounded-lg'>$$</AvatarFallback>
                 </Avatar>
                 <div className='grid flex-1 text-left text-sm leading-tight'>
                   <span className='truncate font-semibold'>{user.name}</span>
@@ -79,13 +79,13 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <Link to={'/profile'} >
+                <Link to='/settings/*' params={{ '*': 'profile' }}>
                   <UserCog className='mr-2 h-4 w-4' />
                   Profile Settings
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to='/settings/members'>
+                <Link to='/settings/*' params={{ '*': 'members' }}>
                   <Users className='mr-2 h-4 w-4' />
                   Members
                 </Link>

@@ -1,9 +1,4 @@
-
-interface User {
-  name: string
-  email: string
-  avatar: string
-}
+import { User } from 'wasp/entities';
 
 interface Team {
   name: string
@@ -35,7 +30,7 @@ interface NavGroup {
 }
 
 interface SidebarData {
-  user: User
+  user: Partial<User>
   teams: Team[]
   navGroups: NavGroup[]
 }

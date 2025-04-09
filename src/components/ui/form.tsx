@@ -9,7 +9,7 @@ import {
 } from 'react-hook-form'
 import * as LabelPrimitive from '@radix-ui/react-label'
 import { Slot } from '@radix-ui/react-slot'
-import { cn } from '../../lib/client/utils'
+import { cn } from '../../utils/cn'
 import { Label } from '../ui/label'
 
 const Form = FormProvider

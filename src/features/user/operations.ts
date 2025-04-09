@@ -2,7 +2,7 @@ import type { UpdateUserProfileInput } from './types.ts'
 import { User, UserBudgetProfile } from 'wasp/entities'
 import { HttpError } from 'wasp/server'
 import type { UpdateUserProfile, GetCurrentUserProfile, GetUsers } from 'wasp/server/operations'
-import { getCurrentBudgetProfileId } from '../../lib/server/permissions'
+import { getCurrentBudgetProfileId } from './permissions.js'
 
 export const updateUserProfile: UpdateUserProfile<UpdateUserProfileInput, User> = async (args, context) => {
   if (!context.user) {

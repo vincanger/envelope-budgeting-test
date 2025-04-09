@@ -1,7 +1,7 @@
 # Implementation Plan: Envelope Budgeting App
 
 ## Overview
-This plan outlines the implementation of the envelope budgeting app using a modified vertical slice approach, optimized for LLM-assisted development. Each phase builds upon the previous, with clear dependencies and testing points.
+This plan outlines the implementation of the envelope budgeting app using a **modified vertical slice approach**, optimized for LLM-assisted development. Each phase builds upon the previous, with clear dependencies and testing points.
 
 ## Phase 1: Foundation
 ### 1.1 Data Models
@@ -95,14 +95,14 @@ This plan outlines the implementation of the envelope budgeting app using a modi
 - Add envelope history
 
 ### 4.3 Data Management
-- Add bulk operations
+- [x] Add bulk operations
 - Create data validation rules
 - Implement data export
 
 ### 4.4 UI Enhancements
 - Add advanced forms
 - Implement data tables
-- Create interactive charts
+- [x]Create interactive charts
 - Add keyboard shortcuts
 
 ## Phase 5: Analytics

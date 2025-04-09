@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { cn } from '../../lib/client/utils'
+import { cn } from '../../utils/cn'
 import { Button } from '../../components/ui/button'
 
 interface GeneralErrorProps extends React.HTMLAttributes<HTMLDivElement> {

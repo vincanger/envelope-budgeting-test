@@ -107,7 +107,7 @@ export const getSpendingByEnvelope: GetSpendingByEnvelope<void, SpendingSummary[
   }
 
   const userId = context.user.id;
-  const { Transaction, Envelope, BudgetProfile, UserBudgetProfile } = context.entities;
+  const { Transaction, UserBudgetProfile } = context.entities;
 
   // Find the UserBudgetProfile link
   const userBudgetProfile = await UserBudgetProfile.findFirst({
@@ -125,10 +125,6 @@ export const getSpendingByEnvelope: GetSpendingByEnvelope<void, SpendingSummary[
   const startDate = startOfMonth(now);
   const endDate = endOfMonth(now);
 
-  // --- BEGIN DEBUG LOGGING ---
-  console.log(`[getSpendingByEnvelope] Query Params: budgetProfileId=${budgetProfileId}, startDate=${startDate.toISOString()}, endDate=${endDate.toISOString()}`);
-  // --- END DEBUG LOGGING ---
-
   // Fetch expense transactions for the current month within the user's budget profile
   const transactions = await Transaction.findMany({
     where: {
@@ -145,14 +141,6 @@ export const getSpendingByEnvelope: GetSpendingByEnvelope<void, SpendingSummary[
     },
   });
 
-  // --- BEGIN DEBUG LOGGING ---
-  console.log(`[getSpendingByEnvelope] Fetched ${transactions.length} transactions for the current month.`);
-  // Log details of each transaction fetched
-  transactions.forEach((tx, index) => {
-      console.log(`[getSpendingByEnvelope] TX ${index}: ID=${tx.id}, Amount=${tx.amount}, Date=${tx.date}, EnvelopeID=${tx.envelopeId}, EnvelopeName=${tx.envelope?.name}`);
-  });
-  // --- END DEBUG LOGGING ---
-
   // Aggregate spending by envelope
   const spendingMap: Record<string, number> = {};
   transactions.forEach((tx) => {
@@ -168,11 +156,6 @@ export const getSpendingByEnvelope: GetSpendingByEnvelope<void, SpendingSummary[
        // --- END DEBUG LOGGING ---
     }
   });
-
-  // --- BEGIN DEBUG LOGGING ---
-  console.log('[getSpendingByEnvelope] Final spendingMap:', JSON.stringify(spendingMap));
-  // --- END DEBUG LOGGING ---
-
   // Convert map to array format for the chart
   const result: SpendingSummary[] = Object.entries(spendingMap)
     .map(([name, value]) => ({

@@ -1,5 +1,5 @@
 import React from 'react'
-import { cn } from '../../lib/client/utils'
+import { cn } from '../../utils/cn'
 
 interface MainProps extends React.HTMLAttributes<HTMLElement> {
   fixed?: boolean

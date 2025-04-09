@@ -25,9 +25,9 @@ import { type SidebarData } from '../types'
 
 export const sidebarData: SidebarData = {
   user: {
-    name: 'satnaing',
-    email: 'satnaingdev@gmail.com',
-    avatar: '/avatars/shadcn.jpg',
+    displayName: 'placeholder',
+    email: 'placeholder@placeholder.com',
+    avatarUrl: '/avatars/shadcn.jpg',
   },
   teams: [
     {
@@ -64,56 +64,6 @@ export const sidebarData: SidebarData = {
           title: 'Transactions',
           url: '/transactions',
           icon: IconLayoutDashboard,
-        },
-      ],
-    },
-    {
-      title: 'General',
-      items: [
-        {
-          title: 'Dashboard',
-          url: '/',
-          icon: IconLayoutDashboard,
-        },
-        {
-          title: 'Tasks',
-          url: '/tasks',
-          icon: IconChecklist,
-        },
-        {
-          title: 'Apps',
-          url: '/apps',
-          icon: IconPackages,
-        },
-        {
-          title: 'Chats',
-          url: '/chats',
-          badge: '3',
-          icon: IconMessages,
-        },
-        {
-          title: 'Users',
-          url: '/users',
-          icon: IconUsers,
-        },
-      ],
-    },
-    {
-      title: 'Pages',
-      items: [
-        {
-          title: 'Auth',
-          icon: IconLockAccess,
-          items: [
-            {
-              title: 'Sign In',
-              url: '/sign-in',
-            },
-            {
-              title: 'Sign Up',
-              url: '/sign-up',
-            },
-          ],
         },
       ],
     },

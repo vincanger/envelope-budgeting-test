@@ -16,29 +16,17 @@ import {
 
 const items = [
   {
-    id: 'recents',
-    label: 'Recents',
+    id: 'envelopes',
+    label: 'Envelopes',
   },
   {
-    id: 'home',
-    label: 'Home',
+    id: 'transactions',
+    label: 'Transactions',
   },
   {
-    id: 'applications',
-    label: 'Applications',
-  },
-  {
-    id: 'desktop',
-    label: 'Desktop',
-  },
-  {
-    id: 'downloads',
-    label: 'Downloads',
-  },
-  {
-    id: 'documents',
-    label: 'Documents',
-  },
+    id: `add more in src/settings`,
+    label: `add more in src/settings`,
+  }
 ] as const
 
 const displayFormSchema = z.object({

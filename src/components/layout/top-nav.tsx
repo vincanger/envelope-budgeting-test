@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { IconMenu } from '@tabler/icons-react'
-import { cn } from '../../lib/client/utils'
+import { cn } from '../../utils/cn'
 import { Button } from '../ui/button'
 import {
   DropdownMenu,

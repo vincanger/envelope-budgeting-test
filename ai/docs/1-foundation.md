@@ -3,6 +3,13 @@
 ## Overview
 This document summarizes the implementation details for Phase 1 (Foundation) of the Envelope Budgeting App, following the plan in `ai/plan.md`. The goal of this phase was to establish the basic project structure, core data models, authentication, and initial UI pages.
 
+## Related Documentation
+
+- **Data Models (`User`, `BudgetProfile`, `UserBudgetProfile`, `Envelope`, `Transaction`):** The definitive source for all data models is `schema.prisma`. This document describes their initial implementation during Phase 1.
+- **App Configuration (`main.wasp`):** The definitive source for app structure (routes, pages, operations, auth config) is `main.wasp`.
+- **Plan:** See `ai/plan.md` for the overall project plan.
+- **Product Requirements:** See `ai/prd.md` for original requirements.
+
 ## 1. Data Models (`schema.prisma`)
 
 - **Objective:** Implement core Prisma models as defined in `ai/prd.md`.
@@ -18,53 +25,21 @@ This document summarizes the implementation details for Phase 1 (Foundation) of 
   - `onDelete: Cascade` used for `UserBudgetProfile` and `Envelope` relations to `BudgetProfile`.
   - `onDelete: Restrict` used for `Transaction` relation to `Envelope` (prevent deleting an envelope with transactions).
   - Necessary `@@index` attributes added.
+  - **Note:** The complete and current definitions of these models are located in the root `schema.prisma` file.
 - **Notes/Challenges:**
   - The `permissions: String[]` field in `UserBudgetProfile` caused a linting error with the default SQLite provider. It was changed to `permissions: String` with the expectation that application logic will handle serialization/deserialization (e.g., comma-separated values).
   - Database migration (`wasp db migrate dev`) initially failed due to an outdated Node.js version (required >= 20.0.0). This was resolved by updating Node.js.
-
-```prisma
-// Excerpt from schema.prisma (Phase 1 models)
-model User {
-  id              Int      @id @default(autoincrement())
-  email           String   @unique
-  emailVerified   Boolean  @default(false)
-  password        String   // Hashed - managed by Wasp auth
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  lastLoginAt     DateTime?
-  budgetProfile   BudgetProfile? @relation("OwnedProfile")
-  memberProfiles  UserBudgetProfile[]
-  transactions    Transaction[]    @relation("CreatedTransactions")
-}
-
-model BudgetProfile { /* ... fields ... */ 
-  owner       User     @relation("OwnedProfile", fields: [ownerId], references: [id])
-  ownerId     Int      @unique 
-  /* ... relations ... */ 
-}
-
-model UserBudgetProfile { /* ... fields ... */ 
-  permissions     String // Was String[]
-  /* ... relations ... */ 
-}
-
-model Envelope { /* ... fields and relations ... */ }
-
-model Transaction { /* ... fields and relations ... */ }
-```
 
 ## 2. Basic Authentication (`main.wasp`, `src/features/auth/`)
 
 - **Objective:** Configure Wasp's email/password auth with verification/reset flows using the Dummy provider for development.
 - **Implementation:**
-  - Modified the `auth` block in `main.wasp`:
-    - Used the `email: {}` method under `auth.methods`.
-    - Added required configuration within `auth.methods.email`: `fromField`, `emailVerification: { clientRoute: ... }`, `passwordReset: { clientRoute: ... }`.
-  - Added a top-level `emailSender` block in `main.wasp` to specify the `provider: Dummy`.
-  - Defined standard auth routes and pages in `main.wasp` (`SignupRoute`, `LoginRoute`, `VerifyEmailRoute`, `RequestPasswordResetRoute`, `PasswordResetRoute`).
-  - Initial attempt used direct `wasp/client/auth` imports for page components in `main.wasp`, causing linter errors. Corrected to use `@src/` imports pointing to custom files.
-  - Ensured auth page component files exist in `src/features/auth/` (`login.tsx`, `signup.tsx`, `VerifyEmailPage.tsx`, `RequestPasswordResetPage.tsx`, `PasswordResetPage.tsx`).
-  - Styled the newly added auth pages (`VerifyEmailPage`, `RequestPasswordResetPage`, `PasswordResetPage`) to match the existing `login.tsx` and `signup.tsx` structure (using `Card`, centered layout, `useTheme`, and Wasp's auth form components like `VerifyEmailForm`).
+  - The `auth` block in `main.wasp` was configured for the `email` method, including settings for sender details, email verification, and password reset flows, linking them to the appropriate client page components.
+  - The top-level `emailSender` block was configured in `main.wasp` to use the `Dummy` provider for development.
+  - Standard auth routes and pages (Signup, Login, Verify Email, Password Reset) were defined in `main.wasp`, pointing to corresponding component files in `src/features/auth/`.
+  - Initial attempt used direct `wasp/client/auth` imports for page components in `main.wasp`, causing linter errors. Corrected to use `@src/` imports pointing to custom wrapper files in `src/features/auth/`.
+  - Ensured auth page component files exist in `src/features/auth/`.
+  - Styled the newly added auth pages (`VerifyEmailPage`, `RequestPasswordResetPage`, `PasswordResetPage`) to match the existing `login.tsx` and `signup.tsx` structure.
   - Removed the temporary `AuthPageLayout.tsx` component.
 - **Notes/Challenges:**
   - Several iterations were needed to find the correct syntax for `auth` and `emailSender` configuration in `main.wasp` for Wasp v0.16.2.
@@ -98,16 +73,12 @@ export function VerifyEmailPage() {
 - **Implementation:**
   - **`createBudgetProfile`:**
     - Created in `src/features/budgets/operations.ts`.
-    - Checks if the authenticated user (`context.user`) already owns a profile to enforce the one-to-one relationship.
-    - Creates a `BudgetProfile` record, connecting the `ownerId` to `context.user.id`.
-    - Returns the newly created profile.
-    - Declared in `main.wasp` under `//#region Budget Profile`.
+    - Implements logic to check for existing profiles and create a new one linked to the user.
+    - This operation is declared as an `action` in `main.wasp`.
   - **`updateUserProfile`:**
     - Created in `src/features/user/operations.ts`.
-    - Provides a basic structure to update `User` fields (currently only `email` is implemented as an example).
-    - Checks for `context.user` authentication.
-    - Explicitly excludes the `password` field from the return value.
-    - Declared in `main.wasp` under `//#region User Profile`.
+    - Provides logic to update user fields (initially just email).
+    - This operation is declared as an `action` in `main.wasp`.
 - **Notes:**
   - Both operations include basic `HttpError(401)` checks for authentication.
   - Input validation beyond basic type checking is minimal at this stage.
@@ -127,26 +98,18 @@ export const createBudgetProfile: CreateBudgetProfile<CreateInput, BudgetProfile
 
 - **Objective:** Create basic layout, navigation, and forms for profile creation/editing.
 - **Implementation:**
-  - The existing layout in `src/main.tsx` (including sidebar, theme providers, etc.) was deemed sufficient, utilizing `Outlet` for page content.
+  - The existing layout in `src/main.tsx` was deemed sufficient.
   - **`CreateBudgetProfilePage.tsx`:**
     - Created in `src/features/budgets/`.
-    - Uses `useAuth` to check for authenticated user.
-    - Implements a form using `shadcn/ui` components (`Card`, `Input`, `Textarea`, `Button`, `Label`) imported via relative paths.
-    - Calls `createBudgetProfile` action directly using `async/await` within `handleSubmit`.
-    - Manages loading (`isExecuting`) and `error` states manually using `useState`.
-    - Redirects to Dashboard on success using `useNavigate`.
-    - Route added in `main.wasp` (`/create-profile`).
+    - Implements the UI form and logic to call the `createBudgetProfile` action.
+    - Associated `route` and `page` declarations were added in `main.wasp`.
   - **`UserProfilePage.tsx`:**
     - Created in `src/features/user/`.
-    - Uses `useAuth` to fetch user data and pre-fill form.
-    - Implements a form using `shadcn/ui` components imported via relative paths.
-    - Calls `updateUserProfile` action directly using `async/await` within `handleSubmit`.
-    - Manages loading (`isExecuting`) and `error` states manually using `useState`.
-    - Shows basic `alert()` for success/error (to be replaced with toasts later).
-    - Route added in `main.wasp` (`/profile`).
+    - Implements the UI form and logic to call the `updateUserProfile` action.
+    - Associated `route` and `page` declarations were added in `main.wasp`.
 - **Notes/Challenges:**
-  - Initial implementation incorrectly used `useAction` hook; refactored to use direct `async/await` calls as per `.cursorrules`.
-  - Initial implementation incorrectly used `@src/` aliases for `shadcn/ui` components; corrected to use relative paths (`../../components/ui/...`).
+  - Refactored from using `useAction` hook to direct `async/await` calls.
+  - Corrected import paths for `shadcn/ui` components.
 
 ```typescript
 // Excerpt from src/features/budgets/CreateBudgetProfilePage.tsx (action call)

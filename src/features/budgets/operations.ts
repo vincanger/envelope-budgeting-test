@@ -1,7 +1,7 @@
 import { HttpError } from 'wasp/server'
-import type { BudgetProfile, User, UserBudgetProfile, Invitation } from 'wasp/entities'
+import type { BudgetProfile, UserBudgetProfile, Invitation } from 'wasp/entities'
 import type { CreateBudgetProfile, GetBudgetProfileMembers, InviteUser, GetPendingInvitations, RevokeInvitation, UpdateMemberRole, RemoveMember, GetUserBudgetProfiles } from 'wasp/server/operations'
-import { ensureUserRole, getCurrentBudgetProfileId } from '../../lib/server/permissions'
+import { ensureUserRole, getCurrentBudgetProfileId } from '../user/permissions'
 // Remove prisma import if no longer needed here
 // import { prisma } from 'wasp/server' 
 // Import crypto for token generation
@@ -180,7 +180,8 @@ export const inviteUser: InviteUser<InviteUserInput, UserBudgetProfile | Invitat
 
     // Construct the signup link
     // TODO: Use environment variable for base URL in production
-    const signupLink = `${process.env.WASP_WEB_CLIENT_URL || 'http://localhost:3000'}/signup?inviteToken=${token}`;
+    const baseUrl = process.env.WASP_WEB_CLIENT_URL || 'http://localhost:3000';
+    const signupLink = `${baseUrl}/sign-up?inviteToken=${token}`;
 
     // Send invitation email
     try {

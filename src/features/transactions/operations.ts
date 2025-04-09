@@ -9,7 +9,7 @@ import type {
   DeleteTransaction,
   BulkImportTransactions
 } from 'wasp/server/operations'
-import { ensureUserRole, getCurrentBudgetProfileId } from '../../lib/server/permissions'
+import { ensureUserRole, getCurrentBudgetProfileId } from '../user/permissions'
 
 // ========= Queries =========
 

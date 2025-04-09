@@ -16,7 +16,7 @@ export function VerifyEmailPage() {
             }}
           />
           <div className="mt-4 text-center text-sm">
-            <Link to="/sign-in" className="text-primary hover:underline">
+            <Link to="/login" className="text-primary hover:underline">
               Go to Sign in
             </Link>
           </div>

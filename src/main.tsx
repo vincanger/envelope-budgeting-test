@@ -10,7 +10,7 @@ import { SidebarProvider } from './components/ui/sidebar';
 import SkipToMain from './components/skip-to-main';
 import { Toaster } from './components/ui/toaster';
 import { AppSidebar } from './components/layout/app-sidebar';
-import { cn } from './lib/client/utils';
+import { cn } from './utils/cn';
 
 // Render the app
 export default function Main() {

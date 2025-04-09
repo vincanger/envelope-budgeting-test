@@ -22,6 +22,8 @@ This is a Wasp full-stack web application project. Always consider the following
 ### Common Issues
 - If client imports aren't working, check path format ('wasp/...' not '@wasp/...')
 - Wasp config file imports should start with "@src/"
+- Client-side Wasp Actions should be called directly WITHOUT using the useAction hook. Instead, use async/await within event handlers.
+  - e.g. `import { deleteTask } from 'wasp/client/operations'`, `await deleteTask({ taskId })`.
 - If entities aren't available in operations, check they're listed in the operation definition
 - If auth isn't working, ensure auth config is properly set up in main.wasp
 
@@ -33,6 +35,7 @@ This is a Wasp full-stack web application project. Always consider the following
 - Unlike traditional frameworks that are sets of libraries, Wasp is a simple programming language that understands web app concepts and generates code for you.
 - Wasp integrates with React (frontend), Node.js (backend), and Prisma (database ORM) to create full-stack web applications with minimal boilerplate.
 - The Wasp compiler reads your declarative configuration and generates all the necessary code for a working web application.
+- For the most up-to-date and comprehensive information, always refer to the [official Wasp documentation](https://wasp-lang.com/docs).
 
 ### Wasp Project Structure
 
@@ -215,6 +218,7 @@ This is a Wasp full-stack web application project. Always consider the following
 - Use the latest Wasp version, as defined in the wasp config file (`main.wasp` or `*.wasp.ts`) in the root of the project.
 - When creating Wasp operations (queries and actions) combine them into an operations.ts file within the feature directory rather than into separate queries.ts and actions.ts files
 - Always use typescript for Wasp code
+- Keep this `.cursorrules` file updated with any new project conventions or changes in Wasp best practices.
 
 ### Wasp Import Rules
 
@@ -246,6 +250,7 @@ This is a Wasp full-stack web application project. Always consider the following
 - Keep the `schema.prisma` within the root of the project
 - When updating schema.prisma, run `wasp db migrate-dev` to apply changes
 - 'sqlite' is default database, but it can't be used with advanced features like background recurring jobs, or prisma enums. Use 'postgresql' instead and then make sure to run `wasp db start` to start the database in a separate terminal window.
+- Define all model relationships (`@relation`) within `schema.prisma`.
 
 ### Wasp Operations
 
@@ -258,10 +263,11 @@ This is a Wasp full-stack web application project. Always consider the following
   - `action createTimeLog { fn: import { createTimeLog } from "@src/server/timeLogs/operations.js", entities: [TimeLog, Project] }`
 - Prioritize the use of Wasp operations for internal client-server communication and only create an API route for external communication to the server (e.g. for Stripe payments).
 - Use Wasp's useQuery hook, `import { useQuery } from 'wasp/client/operations'`, to fetch data from the server.
-- Client-side Wasp Actions: ALWAYS call actions directly (e.g., using async/await within event handlers). ONLY use the useAction hook if optimistic UI updates are specifically required.
+- Client-side Wasp Actions: call actions directly (e.g., using async/await within event handlers). ONLY use the useAction hook if optimistic UI updates are specifically required.
+  - e.g. `import { deleteTask } from 'wasp/client/operations'`, e.g. `await deleteTask({ taskId })`
 - Example operation implementation:
   ```typescript
-  // Server-side query implementation
+  // Server-side operation implementation
   export const getTasks: GetTasks<void, Task[]> = async (_args, context) => {
     if (!context.user) {
       throw new HttpError(401, 'Not authorized');
