@@ -1,16 +1,21 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
 # 6. Advanced Features & Troubleshooting
 
 This document covers advanced Wasp capabilities like Jobs, API Routes, and Middleware, along with performance optimization tips and common troubleshooting steps.
 
-## Advanced Features (`@main.wasp`)
+## Advanced Features ( [main.wasp](mdc:main.wasp) )
 
-These features are configured in `@main.wasp`.
+These features are configured in [main.wasp](mdc:main.wasp).
 
 ### Jobs and Workers
 
 - Wasp supports background jobs, useful for tasks like sending emails, processing data, or scheduled operations.
-- Jobs require a job executor like PgBoss (which requires PostgreSQL, see `3-database-operations.mdc`).
-- Example Job definition in `@main.wasp`:
+- Jobs require a job executor like PgBoss (which requires PostgreSQL, see [3-database-operations.mdc](mdc:.cursor/rules/3-database-operations.mdc) ).
+- Example Job definition in [main.wasp](mdc:main.wasp):
   ```wasp
   job emailSender {
     executor: PgBoss, // Requires PostgreSQL
@@ -23,12 +28,12 @@ These features are configured in `@main.wasp`.
   }
   ```
 - Jobs can be scheduled or triggered programmatically from Wasp actions or other jobs.
-- See [Wasp Jobs Documentation](https://wasp-lang.com/docs/advanced/jobs).
+- See [Wasp Jobs Documentation](mdc:https:/wasp-lang.com/docs/advanced/jobs).
 
 ### API Routes
 
 - Define custom server API endpoints, often used for external integrations (webhooks, third-party services) where Wasp Operations are not suitable.
-- Example API route definition in `@main.wasp`:
+- Example API route definition in [main.wasp](mdc:main.wasp):
   ```wasp
   api stripeWebhook {
     // Implementation function in server code
@@ -43,13 +48,13 @@ These features are configured in `@main.wasp`.
     // auth: false
   }
   ```
-- See [Wasp API Routes Documentation](https://wasp-lang.com/docs/advanced/apis).
+- See [Wasp API Routes Documentation](mdc:https:/wasp-lang.com/docs/advanced/apis).
 
 ### Middleware
 
 - Wasp supports custom middleware functions that can run before API route handlers or Page components.
 - Useful for logging, custom authentication/authorization checks, request transformation, etc.
-- Example Middleware definition in `@main.wasp`:
+- Example Middleware definition in [main.wasp](mdc:main.wasp):
   ```wasp
   // Define the middleware itself
   middleware checkAdmin {
@@ -70,11 +75,11 @@ These features are configured in `@main.wasp`.
       middlewares: [checkAdmin]
   }
   ```
-- See [Wasp Middleware Documentation](https://wasp-lang.com/docs/advanced/middleware).
+- See [Wasp Middleware Documentation](mdc:https:/wasp-lang.com/docs/advanced/middleware).
 
 ## Performance Optimization
 
-- **Operation Dependencies:** Use specific entity dependencies (`entities: [Task]`) in your Wasp operations (`@main.wasp`) to ensure queries are automatically refetched only when relevant data changes.
+- **Operation Dependencies:** Use specific entity dependencies (`entities: [Task]`) in your Wasp operations ([main.wasp](mdc:main.wasp)) to ensure queries are automatically refetched only when relevant data changes.
 - **Pagination:** For queries returning large lists of data, implement pagination logic in your server operation and corresponding UI controls on the client.
 - **React Optimization:**
   - Use `React.memo` for components that re-render often with the same props.
@@ -120,27 +125,27 @@ These features are configured in `@main.wasp`.
       // ... render task list with delete buttons calling handleDelete ...
     }
     ```
-  - See [Wasp Optimistic Updates Documentation](https://wasp-lang.com/docs/advanced/optimistic-updates).
+  - See [Wasp Optimistic Updates Documentation](mdc:https:/wasp-lang.com/docs/advanced/optimistic-updates).
 
 ## Troubleshooting
 
-- **Wasp Type/Import Errors:** If you encounter TypeScript errors related to missing Wasp imports (e.g., from `wasp/client/operations`, `wasp/entities`, `wasp/server`) or unexpected type mismatches after modifying `@main.wasp` or `@schema.prisma`, **try restarting the Wasp development server** (stop `Ctrl+C` and run `wasp start` again) before further debugging. Wasp needs to regenerate code based on these changes.
+- **Wasp Type/Import Errors:** If you encounter TypeScript errors related to missing Wasp imports (e.g., from `wasp/client/operations`, `wasp/entities`, `wasp/server`) or unexpected type mismatches after modifying [main.wasp](mdc:main.wasp) or [schema.prisma](mdc:schema.prisma) , **try restarting the Wasp development server** (stop `Ctrl+C` and run `wasp start` again) before further debugging. Wasp needs to regenerate code based on these changes.
 - **Operations Not Working:**
-  - Check that all required `entities` are listed in the operation's definition in `@main.wasp`.
-  - Verify the import path (`fn: import { ... } from "@src/..."`) in `@main.wasp` is correct.
+  - Check that all required `entities` are listed in the operation's definition in [main.wasp](mdc:main.wasp).
+  - Verify the import path (`fn: import { ... } from "@src/..."`) in [main.wasp](mdc:main.wasp) is correct.
   - Check for runtime errors in the Wasp server console where `wasp start` is running.
   - Ensure client-side calls match the expected arguments and types.
 - **Auth Not Working:**
-  - Verify the `auth` configuration in `@main.wasp` (correct `userEntity`, `methods`, `onAuthFailedRedirectTo`).
-  - Ensure `userEntity` in `@main.wasp` matches the actual `User` model name in `@schema.prisma`.
+  - Verify the `auth` configuration in [main.wasp](mdc:main.wasp) (correct `userEntity`, `methods`, `onAuthFailedRedirectTo`).
+  - Ensure `userEntity` in [main.wasp](mdc:main.wasp) matches the actual `User` model name in [schema.prisma](mdc:schema.prisma).
   - Check Wasp server logs for auth-related errors.
   - If using social auth, confirm environment variables (e.g., `GOOGLE_CLIENT_ID`) are correctly set (e.g., in a `.env.server` file) and loaded by Wasp.
 - **Database Issues:**
-  - Ensure your `@schema.prisma` syntax is correct.
+  - Ensure your [schema.prisma](mdc:schema.prisma) syntax is correct.
   - Run `wasp db migrate-dev "Migration description"` after schema changes to apply them.
   - If using PostgreSQL, ensure the database server is running.
   - Check the `.env.server` file for the correct `DATABASE_URL`.
 - **Build/Runtime Errors:**
-  - Check import paths carefully (Wasp vs. relative vs. `@src/` rules, see `2-project-conventions.mdc`).
+  - Check import paths carefully (Wasp vs. relative vs. `@src/` rules, see [2-project-conventions.mdc](mdc:.cursor/rules/2-project-conventions.mdc) ).
   - Ensure all dependencies are installed (`npm install`).
   - Check the Wasp server console and the browser's developer console for specific error messages. 

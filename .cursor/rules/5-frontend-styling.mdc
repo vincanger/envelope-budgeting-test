@@ -1,3 +1,8 @@
+---
+description: 
+globs: *.tsx,*.jsx
+alwaysApply: false
+---
 # 5. Frontend (React) and Styling (TailwindCSS)
 
 This document outlines conventions for building the user interface with React and styling it with Tailwind CSS.
@@ -5,33 +10,10 @@ This document outlines conventions for building the user interface with React an
 ## React Conventions
 
 - **Imports:**
-  - Use relative paths to import other React components within the `@src/` directory.
+  - Use relative paths to import other React components within the `src/` directory.
     - ✅ `import { MyButton } from '../components/MyButton';`
     - ❌ `import { MyButton } from '@src/components/MyButton';`
-  - For importing Wasp operations (queries/actions) or entities, follow the Wasp import rules (use `wasp/...` prefix). See `2-project-conventions.mdc`.
-    - ✅ `import { useQuery } from 'wasp/client/operations';`
-    - ✅ `import type { Task } from 'wasp/entities';`
-- **Root Component (`@src/App.tsx` or similar):
-  - Ensure the root component defined in `@main.wasp` (usually via `app.client.rootComponent`) renders the `<Outlet />` component from `react-router-dom` to display nested page content.
-    ```tsx
-    // Example Root Component
-    import React from 'react';
-    import { Outlet } from 'react-router-dom';
-    import Header from './Header'; // Example shared component
-
-    function App() {
-      return (
-        <div className="min-h-screen bg-gray-100">
-          <Header />
-          <main className="container mx-auto p-4">
-            {/* Outlet renders the content of the matched route/page */}
-            <Outlet />
-          </main>
-        </div>
-      );
-    }
-    export default App;
-    ```
+  
 - **State Management:**
   - Use standard React hooks (`useState`, `useEffect`, `useReducer`) for component-level state.
   - Use Wasp Queries (`useQuery`) for fetching and managing server state on the client.
@@ -40,7 +22,15 @@ This document outlines conventions for building the user interface with React an
   - Use `try/catch` blocks with `async/await` when calling Wasp Actions.
   - The `useQuery` hook provides `error` objects for handling query errors.
   - Consider implementing a global React Error Boundary component at a high level in your component tree (e.g., within the root component) to catch rendering errors gracefully.
-    - See [React Docs on Error Boundaries](https://react.dev/reference/react/Component#catching-rendering-errors-with-an-error-boundary).
+    - See [React Docs on Error Boundaries](mdc:https:/react.dev/reference/react/Component#catching-rendering-errors-with-an-error-boundary).
+
+## Shadcn/ui Components (`src/components`)
+
+- This project utilizes components based on the [Shadcn/ui](mdc:https:/ui.shadcn.com) library, primarily located within the `src/components` directory and its subdirectories (e.g., `src/components/ui`).
+- Many of these components follow patterns and styles inspired by common admin dashboard layouts built with Shadcn/ui.
+- **Usage:** When building UI features, prefer using or adapting existing components from `src/components` to maintain visual consistency.
+- **Customization:** Components are typically self-contained or rely on utilities (e.g., `cn` for merging Tailwind classes). Refer to the Shadcn/ui documentation for underlying principles if deeper customization is needed.
+- **Adding New Components:** If adding new components inspired by Shadcn/ui, follow the existing structure and conventions within `src/components`.
 
 ## TailwindCSS Conventions
 
@@ -48,7 +38,7 @@ This document outlines conventions for building the user interface with React an
 - **Avoid Inline Styles:** Generally avoid using the `style` prop unless absolutely necessary for dynamic styles that cannot be achieved with Tailwind classes.
 - **Reusability:** For complex or frequently reused style combinations, consider:
   - Creating reusable React components that encapsulate the structure and styling.
-  - If necessary, using `@apply` within a global CSS file (`@src/client/index.css` or similar) to create custom reusable classes, but prefer component composition first.
+  - If necessary, using `@apply` within a global CSS file (`src/client/index.css` or similar) to create custom reusable classes, but prefer component composition first.
     ```css
     /* Example in index.css */
     @tailwind base;

@@ -1,13 +1,18 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
 # 3. Database, Entities, and Operations
 
 This document covers how Wasp interacts with the database using Prisma, defines Wasp Entities, and explains the rules for creating and using Wasp Operations (Queries and Actions).
 
 ## Wasp Database and Entities
 
-- Wasp uses Prisma for database access, with models defined in `@schema.prisma`.
-- Prisma models defined in `@schema.prisma` automatically become Wasp Entities that can be used in operations.
-- Wasp reads the `@schema.prisma` file to understand your data model and generate appropriate code (e.g., types in `wasp/entities`).
-- Example Prisma model in `@schema.prisma`:
+- Wasp uses Prisma for database access, with models defined in [schema.prisma](mdc:schema.prisma).
+- Prisma models defined in [schema.prisma](mdc:schema.prisma) automatically become Wasp Entities that can be used in operations.
+- Wasp reads the [schema.prisma](mdc:schema.prisma) file to understand your data model and generate appropriate code (e.g., types in `wasp/entities`).
+- Example Prisma model in [schema.prisma](mdc:schema.prisma) :
   ```prisma
   model Task {
     id          Int      @id @default(autoincrement())
@@ -18,10 +23,10 @@ This document covers how Wasp interacts with the database using Prisma, defines 
   }
   ```
 
-## Wasp DB Schema Rules (`@schema.prisma`)
+## Wasp DB Schema Rules (@schema.prisma)
 
-- Add database models directly to the `@schema.prisma` file, NOT to `@main.wasp` as entities.
-- Generally avoid adding `db.system` or `db.prisma` properties to the `@main.wasp` config file; configure the database provider within `@schema.prisma` instead.
+- Add database models directly to the [schema.prisma](mdc:schema.prisma) file, NOT to [main.wasp](mdc:main.wasp) as entities.
+- Generally avoid adding `db.system` or `db.prisma` properties to the [main.wasp](mdc:main.wasp) config file; configure the database provider within [schema.prisma](mdc:schema.prisma) instead.
   ```prisma
   // Example in schema.prisma
   datasource db {
@@ -29,19 +34,19 @@ This document covers how Wasp interacts with the database using Prisma, defines 
     url      = env("DATABASE_URL")
   }
   ```
-- Keep the `@schema.prisma` file in the root of the project.
-- **Applying Changes:** After updating `@schema.prisma`, run `wasp db migrate-dev "Your descriptive migration name"` in the terminal to generate and apply SQL migrations.
+- Keep the [schema.prisma](mdc:schema.prisma) file in the root of the project.
+- **Applying Changes:** After updating [schema.prisma](mdc:schema.prisma), run `wasp db migrate-dev` in the terminal to generate and apply SQL migrations.
 - **Database Choice:** While 'sqlite' is the default, it lacks support for features like Prisma enums or PgBoss scheduled jobs. Use 'postgresql' for such cases. If using PostgreSQL locally, ensure it's running (e.g., via `wasp db start` if using Wasp's built-in Docker setup, or ensure your own instance is running).
-- Define all model relationships (`@relation`) within `@schema.prisma`.
+- Define all model relationships (`@relation`) within [schema.prisma](mdc:schema.prisma).
 
 ## Wasp Operations (Queries & Actions)
 
-- Operations are how Wasp handles client-server communication, defined in `@main.wasp`.
+- Operations are how Wasp handles client-server communication, defined in [main.wasp](mdc:main.wasp).
 - **Queries:** Read operations (fetch data).
 - **Actions:** Write operations (create, update, delete data).
 - Operations automatically handle data fetching, caching (for queries), and updates.
-- Operations reference Entities (defined in `@schema.prisma`) to establish proper data access patterns and dependencies.
-- Example definitions in `@main.wasp`:
+- Operations reference Entities (defined in [schema.prisma](mdc:schema.prisma) ) to establish proper data access patterns and dependencies.
+- Example definitions in [main.wasp](mdc:main.wasp):
   ```wasp
   query getTasks {
     // Points to the implementation function
@@ -58,27 +63,27 @@ This document covers how Wasp interacts with the database using Prisma, defines 
 
 ## Wasp Operations Rules & Implementation
 
-- **Operation File:** Implement query and action functions together in a single `operations.ts` file within the relevant feature directory (e.g., `@src/features/tasks/operations.ts`).
-- **Generated Types:** Wasp auto-generates TypeScript types for your operations based on their definitions in `@main.wasp` and the functions' signatures.
+- **Operation File:** Implement query and action functions together in a single `operations.ts` file within the relevant feature directory (e.g., `src/features/tasks/operations.ts`).
+- **Generated Types:** Wasp auto-generates TypeScript types for your operations based on their definitions in [main.wasp](mdc:main.wasp) and the functions' signatures.
   - Import operation types using `import type { MyQuery, MyAction } from 'wasp/server/operations';`
-  - If types aren't updated after changing `@main.wasp` or the function signature, restart the Wasp dev server (`wasp start`).
-- **Entity Types:** Wasp generates types for your Prisma models from `@schema.prisma`.
+  - If types aren't updated after changing [main.wasp](mdc:main.wasp) or the function signature, restart the Wasp dev server (`wasp start`).
+- **Entity Types:** Wasp generates types for your Prisma models from [schema.prisma](mdc:schema.prisma).
   - Import entity types using `import type { MyModel } from 'wasp/entities';`
-- **Entity Access:** Ensure all Entities needed within an operation's logic are listed in its `entities: [...]` definition in `@main.wasp`. This makes `context.entities.YourModel` available.
-- **Internal Communication:** Prioritize Wasp operations for client-server communication within the app. Use API Routes (see `6-advanced-troubleshooting.mdc`) primarily for external integrations (webhooks, etc.).
+- **Entity Access:** Ensure all Entities needed within an operation's logic are listed in its `entities: [...]` definition in [main.wasp](mdc:main.wasp). This makes `context.entities.YourModel` available.
+- **Internal Communication:** Prioritize Wasp operations for client-server communication within the app. Use API Routes (see [6-advanced-troubleshooting.mdc](mdc:.cursor/rules/6-advanced-troubleshooting.mdc))  primarily for external integrations (webhooks, etc.).
 - **Client-Side Query Usage:** Use Wasp's `useQuery` hook from `wasp/client/operations` to fetch data.
   - `import { useQuery } from 'wasp/client/operations';`
   - `const { data, isLoading, error } = useQuery(getQueryName, { queryArgs });`
-- **Client-Side Action Usage:** Call actions *directly* using `async`/`await`. **Avoid** the `useAction` hook unless you specifically need optimistic UI updates (see `6-advanced-troubleshooting.mdc`).
+- **Client-Side Action Usage:** Call actions *directly* using `async`/`await`. **Avoid** the `useAction` hook unless you specifically need optimistic UI updates (see [6-advanced-troubleshooting.mdc](mdc:.cursor/rules/6-advanced-troubleshooting.mdc)).
   - `import { myAction } from 'wasp/client/operations';`
   - `const result = await myAction({ actionArgs });`
-- **Example Operation Implementation (`@src/features/tasks/operations.ts`):
+- **Example Operation Implementation (`src/features/tasks/operations.ts`):
   ```typescript
   import { HttpError } from 'wasp/server'
   import type { GetTasks, CreateTask } from 'wasp/server/operations'
   import type { Task } from 'wasp/entities'
 
-  // Type annotations come from Wasp based on @main.wasp definitions
+  // Type annotations come from Wasp based on main.wasp definitions
   export const getTasks: GetTasks<void, Task[]> = async (_args, context) => {
     if (!context.user) {
       throw new HttpError(401, 'Not authorized');
